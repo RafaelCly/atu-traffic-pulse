@@ -53,27 +53,30 @@ const KPICard = ({ title, value, icon: Icon, trend, trendValue, color }: KPICard
   };
 
   return (
-    <Card className="relative overflow-hidden border-0 shadow-lg bg-gradient-to-br from-card to-card/50">
+    <Card className="relative overflow-hidden border-0 shadow-xl bg-gradient-to-br from-card via-card to-card/80 hover:shadow-2xl transition-all duration-300 group">
       <CardContent className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className={cn("p-3 rounded-lg border", getColorClasses())}>
-            <Icon className="h-6 w-6" />
+        <div className="flex items-center justify-between mb-6">
+          <div className={cn("p-4 rounded-xl border-2 shadow-lg group-hover:scale-110 transition-transform duration-300", getColorClasses())}>
+            <Icon className="h-7 w-7" />
           </div>
-          <Badge variant="outline" className={cn("gap-1", getTrendColor())}>
-            <TrendIcon className="h-3 w-3" />
+          <Badge variant="outline" className={cn("gap-2 px-3 py-1 font-semibold", getTrendColor())}>
+            <TrendIcon className="h-4 w-4" />
             {trendValue}
           </Badge>
         </div>
         
-        <div>
-          <h3 className="text-2xl font-bold text-foreground mb-1">{value}</h3>
-          <p className="text-sm text-muted-foreground">{title}</p>
+        <div className="space-y-2">
+          <h3 className="text-3xl font-bold text-foreground tracking-tight">{value}</h3>
+          <p className="text-sm font-medium text-muted-foreground">{title}</p>
         </div>
         
-        {/* Subtle background pattern */}
-        <div className="absolute top-0 right-0 w-20 h-20 opacity-5">
+        {/* Enhanced background pattern with better opacity */}
+        <div className="absolute -top-4 -right-4 w-24 h-24 opacity-[0.03] rotate-12 group-hover:rotate-6 transition-transform duration-500">
           <Icon className="w-full h-full" />
         </div>
+        
+        {/* Subtle gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-primary/[0.02] pointer-events-none" />
       </CardContent>
     </Card>
   );
