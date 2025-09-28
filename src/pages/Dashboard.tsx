@@ -18,7 +18,9 @@ import {
   BarChart3,
   Settings,
   Monitor,
-  Zap
+  Zap,
+  Camera,
+  Navigation
 } from "lucide-react";
 import TrafficMap from "@/components/TrafficMap";
 import KPICard from "@/components/KPICard";
@@ -82,7 +84,7 @@ const Dashboard = () => {
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
                   ATU Centro de Control
                 </h1>
-                <p className="text-sm text-muted-foreground font-medium">Sistema Inteligente de Monitoreo de Tráfico</p>
+                <p className="text-sm text-muted-foreground font-medium">Sistema de Monitoreo con Cámaras y GPS</p>
               </div>
             </div>
             
@@ -94,8 +96,12 @@ const Dashboard = () => {
                   <span className="text-xs font-medium text-success">Sistema Activo</span>
                 </div>
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-full">
-                  <Monitor className="h-3 w-3 text-primary" />
+                  <Camera className="h-3 w-3 text-primary" />
                   <span className="text-xs font-medium text-primary">{trafficData.activeCameras} Cámaras</span>
+                </div>
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-warning/10 rounded-full">
+                  <Navigation className="h-3 w-3 text-warning" />
+                  <span className="text-xs font-medium text-warning">GPS Activo</span>
                 </div>
               </div>
               
@@ -190,7 +196,7 @@ const Dashboard = () => {
                       </div>
                       <div>
                         <h3 className="text-lg font-semibold">Mapa de Tráfico en Tiempo Real</h3>
-                        <p className="text-sm text-muted-foreground">Monitoreo inteligente de 6 zonas de Lima</p>
+                        <p className="text-sm text-muted-foreground">Monitoreo con cámaras inteligentes y GPS</p>
                       </div>
                       <Badge variant="outline" className="ml-auto bg-success/10 border-success/20">
                         <div className="w-2 h-2 bg-success rounded-full mr-2 animate-pulse" />
@@ -236,15 +242,15 @@ const Dashboard = () => {
                       </div>
                       <div>
                         <h3 className="text-lg font-semibold">Estado del Sistema</h3>
-                        <p className="text-sm text-muted-foreground">Monitoreo de infraestructura</p>
+                        <p className="text-sm text-muted-foreground">Monitoreo de cámaras y GPS</p>
                       </div>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex justify-between items-center p-3 bg-accent/30 rounded-lg">
                       <div className="flex items-center gap-2">
-                        <Monitor className="h-4 w-4 text-primary" />
-                        <span className="text-sm font-medium">Cámaras Activas</span>
+                        <Camera className="h-4 w-4 text-primary" />
+                        <span className="text-sm font-medium">Cámaras de Tráfico</span>
                       </div>
                       <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
                         {trafficData.activeCameras}/130
@@ -253,18 +259,18 @@ const Dashboard = () => {
                     
                     <div className="flex justify-between items-center p-3 bg-accent/30 rounded-lg">
                       <div className="flex items-center gap-2">
-                        <Zap className="h-4 w-4 text-success" />
-                        <span className="text-sm font-medium">Sensores IoT</span>
+                        <Navigation className="h-4 w-4 text-success" />
+                        <span className="text-sm font-medium">Sistema GPS</span>
                       </div>
                       <Badge variant="outline" className="bg-success/10 text-success border-success/20">
-                        98% Online
+                        GPS Activo
                       </Badge>
                     </div>
                     
                     <div className="flex justify-between items-center p-3 bg-accent/30 rounded-lg">
                       <div className="flex items-center gap-2">
                         <Activity className="h-4 w-4 text-success" />
-                        <span className="text-sm font-medium">Conectividad</span>
+                        <span className="text-sm font-medium">Red de Comunicación</span>
                       </div>
                       <Badge variant="outline" className="bg-success/10 text-success border-success/20">
                         Óptima
@@ -274,7 +280,7 @@ const Dashboard = () => {
                     <div className="flex justify-between items-center p-3 bg-accent/30 rounded-lg">
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">Última Sync</span>
+                        <span className="text-sm font-medium">Última Sincronización</span>
                       </div>
                       <span className="text-sm font-medium text-success">
                         {currentTime.toLocaleTimeString()}
