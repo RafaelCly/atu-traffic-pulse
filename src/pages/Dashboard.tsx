@@ -1,3 +1,4 @@
+import React from "react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,6 +26,8 @@ import {
 import TrafficMap from "@/components/TrafficMap";
 import KPICard from "@/components/KPICard";
 import AlertsPanel from "@/components/AlertsPanel";
+import MetricsChart from "@/components/MetricsChart";
+import DecisionInsights from "@/components/DecisionInsights";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -127,10 +130,10 @@ const Dashboard = () => {
       </header>
 
       <div className="max-w-7xl mx-auto p-6 space-y-8">
-        {/* Enhanced KPIs with better visual hierarchy */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+        {/* Enhanced KPIs with additional metrics */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-4">
           <KPICard
-            title="Vehículos en Circulación"
+            title="Vehículos Activos"
             value={trafficData.totalVehicles.toLocaleString()}
             icon={Car}
             trend="up"
@@ -138,7 +141,7 @@ const Dashboard = () => {
             color="primary"
           />
           <KPICard
-            title="Velocidad Promedio"
+            title="Velocidad Media"
             value={`${trafficData.averageSpeed} km/h`}
             icon={Activity}
             trend="down"
@@ -146,7 +149,7 @@ const Dashboard = () => {
             color="warning"
           />
           <KPICard
-            title="Incidencias Activas"
+            title="Incidencias"
             value={trafficData.incidents.toString()}
             icon={AlertTriangle}
             trend="up"
@@ -154,12 +157,28 @@ const Dashboard = () => {
             color="destructive"
           />
           <KPICard
-            title="Nivel de Congestión"
+            title="Congestión"
             value={`${trafficData.congestionLevel}%`}
             icon={TrendingUp}
             trend="stable"
             trendValue="0%"
             color="accent"
+          />
+          <KPICard
+            title="Tiempo Ahorro"
+            value="23 min"
+            icon={Clock}
+            trend="up"
+            trendValue="+8%"
+            color="success"
+          />
+          <KPICard
+            title="Eficiencia"
+            value="87%"
+            icon={Zap}
+            trend="up"
+            trendValue="+3%"
+            color="primary"
           />
         </div>
 
@@ -185,9 +204,12 @@ const Dashboard = () => {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Analytics Section - Power BI Style */}
+            <MetricsChart />
+            
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
               {/* Enhanced Traffic Map */}
-              <div className="lg:col-span-2">
+              <div className="xl:col-span-2">
                 <Card className="overflow-hidden border-0 shadow-xl bg-gradient-to-br from-card to-card/80">
                   <CardHeader className="pb-4 bg-gradient-to-r from-primary/5 to-transparent">
                     <CardTitle className="flex items-center gap-3">
@@ -195,12 +217,12 @@ const Dashboard = () => {
                         <MapPin className="h-5 w-5 text-primary" />
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold">Mapa de Tráfico en Tiempo Real</h3>
-                        <p className="text-sm text-muted-foreground">Monitoreo con cámaras inteligentes y GPS</p>
+                        <h3 className="text-lg font-semibold">Mapa Inteligente de Tráfico</h3>
+                        <p className="text-sm text-muted-foreground">Vista en tiempo real con IA predictiva</p>
                       </div>
                       <Badge variant="outline" className="ml-auto bg-success/10 border-success/20">
                         <div className="w-2 h-2 bg-success rounded-full mr-2 animate-pulse" />
-                        En Vivo
+                        IA Activa
                       </Badge>
                     </CardTitle>
                   </CardHeader>
@@ -210,84 +232,9 @@ const Dashboard = () => {
                 </Card>
               </div>
 
-              {/* Enhanced Sidebar */}
+              {/* Decision Insights Panel */}
               <div className="space-y-6">
-                {/* Alerts Panel */}
-                <Card className="overflow-hidden border-0 shadow-xl bg-gradient-to-br from-card to-card/80">
-                  <CardHeader className="pb-4 bg-gradient-to-r from-warning/5 to-transparent">
-                    <CardTitle className="flex items-center gap-3">
-                      <div className="p-2 bg-warning/10 rounded-lg">
-                        <Bell className="h-5 w-5 text-warning" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold">Alertas Críticas</h3>
-                        <p className="text-sm text-muted-foreground">Requieren atención inmediata</p>
-                      </div>
-                      <Badge variant="destructive" className="ml-auto">
-                        {trafficData.alerts}
-                      </Badge>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    <AlertsPanel />
-                  </CardContent>
-                </Card>
-
-                {/* Enhanced System Status */}
-                <Card className="overflow-hidden border-0 shadow-xl bg-gradient-to-br from-card to-card/80">
-                  <CardHeader className="pb-4 bg-gradient-to-r from-success/5 to-transparent">
-                    <CardTitle className="flex items-center gap-3">
-                      <div className="p-2 bg-success/10 rounded-lg">
-                        <Activity className="h-5 w-5 text-success" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold">Estado del Sistema</h3>
-                        <p className="text-sm text-muted-foreground">Monitoreo de cámaras y GPS</p>
-                      </div>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex justify-between items-center p-3 bg-accent/30 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <Camera className="h-4 w-4 text-primary" />
-                        <span className="text-sm font-medium">Cámaras de Tráfico</span>
-                      </div>
-                      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-                        {trafficData.activeCameras}/130
-                      </Badge>
-                    </div>
-                    
-                    <div className="flex justify-between items-center p-3 bg-accent/30 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <Navigation className="h-4 w-4 text-success" />
-                        <span className="text-sm font-medium">Sistema GPS</span>
-                      </div>
-                      <Badge variant="outline" className="bg-success/10 text-success border-success/20">
-                        GPS Activo
-                      </Badge>
-                    </div>
-                    
-                    <div className="flex justify-between items-center p-3 bg-accent/30 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <Activity className="h-4 w-4 text-success" />
-                        <span className="text-sm font-medium">Red de Comunicación</span>
-                      </div>
-                      <Badge variant="outline" className="bg-success/10 text-success border-success/20">
-                        Óptima
-                      </Badge>
-                    </div>
-                    
-                    <div className="flex justify-between items-center p-3 bg-accent/30 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">Última Sincronización</span>
-                      </div>
-                      <span className="text-sm font-medium text-success">
-                        {currentTime.toLocaleTimeString()}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
+                <DecisionInsights />
               </div>
             </div>
           </TabsContent>
@@ -321,36 +268,61 @@ const Dashboard = () => {
           </TabsContent>
 
           <TabsContent value="analytics">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="overflow-hidden border-0 shadow-xl bg-gradient-to-br from-card to-card/80">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-3">
-                    <BarChart3 className="h-6 w-6 text-primary" />
-                    Tendencias de Tráfico
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-8 text-muted-foreground">
-                    <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>Análisis de datos en desarrollo</p>
-                  </div>
-                </CardContent>
-              </Card>
+            <div className="space-y-6">
+              {/* Advanced Analytics */}
+              <MetricsChart />
               
-              <Card className="overflow-hidden border-0 shadow-xl bg-gradient-to-br from-card to-card/80">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-3">
-                    <TrendingUp className="h-6 w-6 text-success" />
-                    Reportes de Rendimiento
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-8 text-muted-foreground">
-                    <TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>Métricas avanzadas próximamente</p>
-                  </div>
-                </CardContent>
-              </Card>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="overflow-hidden border-0 shadow-xl bg-gradient-to-br from-card to-card/80">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-3">
+                      <BarChart3 className="h-6 w-6 text-primary" />
+                      Análisis Predictivo
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="p-4 bg-primary/5 rounded-lg">
+                        <h4 className="font-semibold text-primary">Predicción Próximas 2 Horas</h4>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Incremento del 35% en Centro Histórico. Recomendamos activar Plan de Contingencia B.
+                        </p>
+                      </div>
+                      <div className="p-4 bg-warning/5 rounded-lg">
+                        <h4 className="font-semibold text-warning">Alerta Temprana</h4>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Evento masivo detectado en Miraflores. Preparar desvíos alternativos.
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card className="overflow-hidden border-0 shadow-xl bg-gradient-to-br from-card to-card/80">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-3">
+                      <TrendingUp className="h-6 w-6 text-success" />
+                      ROI de Optimizaciones
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center p-3 bg-success/10 rounded-lg">
+                        <span className="font-medium">Ahorro Combustible</span>
+                        <span className="font-bold text-success">S/. 245,000</span>
+                      </div>
+                      <div className="flex justify-between items-center p-3 bg-primary/10 rounded-lg">
+                        <span className="font-medium">Tiempo Ahorrado</span>
+                        <span className="font-bold text-primary">1,250 hrs</span>
+                      </div>
+                      <div className="flex justify-between items-center p-3 bg-warning/10 rounded-lg">
+                        <span className="font-medium">Reducción CO2</span>
+                        <span className="font-bold text-warning">-18%</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </TabsContent>
         </Tabs>
