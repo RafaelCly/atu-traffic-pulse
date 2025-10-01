@@ -13,18 +13,21 @@ const IntervalDisplay: React.FC = () => {
   useEffect(() => {
     const updateInterval = async () => {
       try {
+        console.log('🔄 Actualizando intervalo actual...');
         const intervalData = await trafficService.getCurrentInterval();
         if (intervalData) {
+          console.log('✅ Intervalo obtenido:', intervalData.current_interval);
           setCurrentInterval(intervalData.current_interval);
           setSimulationStep(intervalData.simulation_step);
           setTotalIntervals(intervalData.total_intervals);
           setIsConnected(true);
         } else {
+          console.warn('⚠️ No se pudo obtener el intervalo');
           setIsConnected(false);
           setCurrentInterval('Sin conexión');
         }
       } catch (error) {
-        console.error('Error fetching current interval:', error);
+        console.error('❌ Error al obtener intervalo actual:', error);
         setIsConnected(false);
         setCurrentInterval('Error de conexión');
       }
@@ -33,8 +36,8 @@ const IntervalDisplay: React.FC = () => {
     // Actualizar inmediatamente
     updateInterval();
 
-    // Actualizar cada 5 segundos
-    const interval = setInterval(updateInterval, 5000);
+    // Actualizar cada 10 segundos (coincide con el backend)
+    const interval = setInterval(updateInterval, 10000);
 
     return () => clearInterval(interval);
   }, []);

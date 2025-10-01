@@ -144,7 +144,9 @@ class TrafficService {
   async getKPIs(): Promise<TrafficKPIs | null> {
     try {
       console.log('📊 Obteniendo KPIs del backend...');
-      const response = await fetchWithTimeout(`${PYTHON_MAP_BASE_URL}/api/kpis`);
+      // Agregar timestamp para evitar caché
+      const timestamp = new Date().getTime();
+      const response = await fetchWithTimeout(`${PYTHON_MAP_BASE_URL}/api/kpis?_t=${timestamp}`);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch KPIs: ${response.status} ${response.statusText}`);
@@ -211,7 +213,9 @@ class TrafficService {
   async getCurrentInterval(): Promise<CurrentInterval> {
     try {
       console.log('⏰ Obteniendo intervalo actual...');
-      const response = await fetchWithTimeout(`${PYTHON_MAP_BASE_URL}/api/current_interval`);
+      // Agregar timestamp para evitar caché
+      const timestamp = new Date().getTime();
+      const response = await fetchWithTimeout(`${PYTHON_MAP_BASE_URL}/api/current_interval?_t=${timestamp}`);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch current interval: ${response.status}`);
