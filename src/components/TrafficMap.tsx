@@ -36,24 +36,32 @@ const TrafficMap = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Actualizar timestamp cada 10 segundos
+  // Actualizar timestamp cada 10 segundos Y recargar el iframe
   useEffect(() => {
     const interval = setInterval(() => {
       setLastUpdate(new Date());
-    }, 10000);
+      
+      // Recargar el iframe para obtener los nuevos colores del mapa
+      const iframe = document.getElementById('python-map') as HTMLIFrameElement;
+      if (iframe && mapStatus === 'ready') {
+        console.log('🔄 Recargando mapa para actualizar colores...');
+        // Usar timestamp en la URL para forzar recarga sin caché
+        const timestamp = new Date().getTime();
+        iframe.src = `${PYTHON_MAP_BASE_URL}?_t=${timestamp}`;
+      }
+    }, 10000); // Cada 10 segundos, igual que el backend
+    
     return () => clearInterval(interval);
-  }, []);
+  }, [mapStatus]); // Dependencia de mapStatus para asegurar que el iframe esté listo
 
   const handleRefresh = () => {
     setLastUpdate(new Date());
-    // Recargar el iframe
+    // Recargar el iframe con timestamp para evitar caché
     const iframe = document.getElementById('python-map') as HTMLIFrameElement;
     if (iframe) {
-      const currentSrc = iframe.src;
-      iframe.src = '';
-      setTimeout(() => {
-        iframe.src = currentSrc;
-      }, 100);
+      console.log('🔄 Recarga manual del mapa...');
+      const timestamp = new Date().getTime();
+      iframe.src = `${PYTHON_MAP_BASE_URL}?_t=${timestamp}`;
     }
   };
 
