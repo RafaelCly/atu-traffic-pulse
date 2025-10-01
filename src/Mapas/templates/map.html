@@ -184,9 +184,21 @@
     function updateRoads() {
         console.log('📍 Obteniendo datos de carreteras...');
         fetch('/api/road_data')
-            .then(response => response.json())
+            .then(response => {
+                console.log('📍 Response status:', response.status);
+                return response.json();
+            })
             .then(data => {
                 console.log(`✅ Recibidos ${data.length} segmentos de carretera`);
+                
+                // Log de colores recibidos
+                const colorCounts = {green: 0, yellow: 0, red: 0, gray: 0};
+                data.forEach(road => {
+                    const color = road.color || 'gray';
+                    colorCounts[color] = (colorCounts[color] || 0) + 1;
+                });
+                console.log(`🎨 Colores recibidos: 🟢${colorCounts.green} 🟡${colorCounts.yellow} 🔴${colorCounts.red} ⚪${colorCounts.gray}`);
+                
                 roadLayer.clearLayers();
                 const lineWeight = 6; 
                 data.forEach((road) => {
