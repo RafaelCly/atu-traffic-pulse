@@ -60,7 +60,12 @@ export interface VehicleByIntervalAndSegment {
   ocupacion: number;
 }
 
-const PYTHON_MAP_BASE_URL = 'http://localhost:5000';
+// Detectar si estamos en producción o desarrollo
+const isProd = import.meta.env.PROD;
+const PYTHON_MAP_BASE_URL = isProd 
+  ? 'https://atu-traffic-pulse-backend.onrender.com'
+  : 'http://localhost:5000';
+
 const REQUEST_TIMEOUT = 10000; // 10 segundos timeout
 
 // Función helper para agregar timeout a fetch

@@ -3,6 +3,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, ExternalLink, AlertTriangle } from "lucide-react";
 
+// Detectar si estamos en producción o desarrollo
+const isProd = import.meta.env.PROD;
+const PYTHON_MAP_BASE_URL = isProd 
+  ? 'https://atu-traffic-pulse-backend.onrender.com'
+  : 'http://localhost:5000';
+
 const TrafficMap = () => {
   const [mapStatus, setMapStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
@@ -11,7 +17,7 @@ const TrafficMap = () => {
   useEffect(() => {
     const checkMapServer = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/debug');
+        const response = await fetch(`${PYTHON_MAP_BASE_URL}/api/debug`);
         if (response.ok) {
           setMapStatus('ready');
         } else {
@@ -52,7 +58,7 @@ const TrafficMap = () => {
   };
 
   const openMapInNewTab = () => {
-    window.open('http://localhost:5000', '_blank');
+    window.open(PYTHON_MAP_BASE_URL, '_blank');
   };
 
   if (mapStatus === 'error') {
@@ -136,7 +142,7 @@ const TrafficMap = () => {
       {/* Iframe del mapa Python */}
       <iframe
         id="python-map"
-        src="http://localhost:5000"
+        src={PYTHON_MAP_BASE_URL}
         className="w-full h-full border-0"
         title="Mapa de Tráfico en Tiempo Real"
         loading="lazy"
