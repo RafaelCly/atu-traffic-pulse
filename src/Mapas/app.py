@@ -12,7 +12,19 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 # Configurar Flask con carpeta estática para las imágenes
 app = Flask(__name__, static_folder='../imagenes', static_url_path='/static/imagenes')
-CORS(app)  # Permitir CORS para todas las rutas
+
+# Configurar CORS para permitir el frontend de Render
+CORS(app, resources={
+    r"/api/*": {
+        "origins": [
+            "https://atu-traffic-pulse-frontend.onrender.com",
+            "http://localhost:5173",
+            "http://localhost:8080"
+        ],
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type"]
+    }
+})
 
 # =================================================================
 # CONFIGURACIÓN
@@ -581,4 +593,18 @@ if __name__ == '__main__':
     traffic_thread.start()
     
     logging.info(f"🚦 SERVIDOR LISTO. Accede a http://localhost:5000")
-    app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)
+    app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
+else:
+    # Para producción con gunicorn
+    logging.info("🚀 Iniciando en modo producción...")
+    load_traffic_data()
+    load_and_structure_data()
+    
+    if not road_segments_data or not sections:
+        logging.critical("❌ ERROR CRÍTICO: No se pudieron cargar datos del mapa.")
+    else:
+        logging.info("\n" + "="*60 + "\n✅ ESTRUCTURACIÓN COMPLETADA\n" + "="*60)
+        
+        traffic_thread = threading.Thread(target=update_traffic_periodically, daemon=True)
+        traffic_thread.start()
+        logging.info("🚦 SERVIDOR LISTO para producción")
