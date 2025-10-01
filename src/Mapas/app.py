@@ -12,6 +12,14 @@ import logging
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+# Helper para agregar headers anti-caché a todas las respuestas API
+def add_no_cache_headers(response):
+    """Agrega headers para prevenir cualquier tipo de caché"""
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
+
 # Archivos de caché
 CACHE_DIR = 'cache'
 GRAPH_CACHE_FILE = os.path.join(CACHE_DIR, 'graph_cache.pkl')
@@ -478,7 +486,8 @@ def update_traffic_periodically():
 
 @app.route('/')
 def map_page():
-    return render_template('map.html')
+    response = app.make_response(render_template('map.html'))
+    return add_no_cache_headers(response)
 
 @app.route('/health')
 def health_check():
@@ -513,7 +522,7 @@ def get_road_data():
     logging.info(f"📡 /api/road_data → Enviando {len(route_segments)} segmentos: "
                 f"🟢{color_counts['green']} 🟡{color_counts['yellow']} 🔴{color_counts['red']}")
     
-    return jsonify(route_segments)
+    return add_no_cache_headers(jsonify(route_segments))
 
 @app.route('/api/traffic_data')
 def get_traffic_data():
@@ -528,7 +537,7 @@ def get_traffic_data():
             "occupancy_percentage": s.get("occupancy_percentage", 0),
             "total_vehicles": sum(s["vehicle_counts"].values())
         })
-    return jsonify(clean_sections)
+    return add_no_cache_headers(jsonify(clean_sections))
 
 @app.route('/api/kpis')
 def get_kpis():
@@ -572,11 +581,11 @@ def get_kpis():
         "total_segments_count": total_segments_count
     }
 
-    return jsonify(kpis)
+    return add_no_cache_headers(jsonify(kpis))
 
 @app.route('/api/debug')
 def debug_info():
-    return jsonify({
+    return add_no_cache_headers(jsonify({
         'total_segments_in_polygon': len(road_segments_data),
         'total_route_sections': len(sections),
         'current_simulation_step': simulation_step,
@@ -586,7 +595,7 @@ def debug_info():
             'ucp': s.get('ucp_density'),
             'vehicles': sum(s.get('vehicle_counts', {}).values())
         } for s in sections]
-    })
+    }))
 
 @app.route('/api/current_interval')
 def get_current_interval():
@@ -594,21 +603,21 @@ def get_current_interval():
     Retorna el intervalo actual de la simulación
     """
     current_interval = time_intervals[simulation_step] if time_intervals else "N/A"
-    return jsonify({
+    return add_no_cache_headers(jsonify({
         'current_interval': current_interval,
         'simulation_step': simulation_step,
         'total_intervals': len(time_intervals)
-    })
+    }))
 
 @app.route('/api/intervals')
 def get_all_intervals():
     """
     Retorna todos los intervalos disponibles
     """
-    return jsonify({
+    return add_no_cache_headers(jsonify({
         'intervals': time_intervals,
         'current_step': simulation_step
-    })
+    }))
 
 @app.route('/api/ucp_by_interval')
 def get_ucp_by_interval():
@@ -634,7 +643,7 @@ def get_ucp_by_interval():
                 'total_ucp': 0
             })
     
-    return jsonify(ucp_data)
+    return add_no_cache_headers(jsonify(ucp_data))
 
 @app.route('/api/vehicles_by_interval_and_segment')
 def get_vehicles_by_interval_and_segment():
