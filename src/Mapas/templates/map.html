@@ -182,9 +182,11 @@
     }
 
     function updateRoads() {
+        console.log('📍 Obteniendo datos de carreteras...');
         fetch('/api/road_data')
             .then(response => response.json())
             .then(data => {
+                console.log(`✅ Recibidos ${data.length} segmentos de carretera`);
                 roadLayer.clearLayers();
                 const lineWeight = 6; 
                 data.forEach((road) => {
@@ -207,8 +209,9 @@
                     
                     polyline.addTo(roadLayer);
                 });
+                console.log('✅ Carreteras renderizadas en el mapa');
             })
-            .catch(error => console.error('Error al obtener datos de calles:', error));
+            .catch(error => console.error('❌ Error al obtener datos de calles:', error));
     }
 
     // --- FUNCIONES DE INTERACTIVIDAD DEL PANEL ---
@@ -263,11 +266,13 @@
     }
 
     setInterval(() => {
+        console.log('🔄 [' + new Date().toLocaleTimeString() + '] Actualizando datos del mapa...');
         updateStatusInfo();
         updateTrafficDetails().then(() => {
             updateRoads();
+            console.log('✅ [' + new Date().toLocaleTimeString() + '] Mapa actualizado');
         });
-    }, 10000); 
+    }, 10000); // Cada 10 segundos
 
     initialLoad();
 </script>
