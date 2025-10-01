@@ -371,11 +371,10 @@ def load_and_structure_data():
 
 def recalculate_segment_states():
     """Recalcula la densidad UCP y el color para todos los segmentos."""
-    color_changes = []
+    color_summary = []
     for section in sections:
         total_ucp = 0
         for v_type, count in section['vehicle_counts'].items():
-            # Ya no necesitamos ajustar negativos aquí, se manejan en update_traffic_periodically
             total_ucp += section['vehicle_counts'][v_type] * UCP_WEIGHTS.get(v_type, 0)
         section['ucp_density'] = round(total_ucp, 2)
 
@@ -394,22 +393,15 @@ def recalculate_segment_states():
         else:
             new_color = 'red'
         
-        # Contar cuántos edges cambiaron de color
-        edges_updated = 0
+        # Aplicar el nuevo color a todos los edges sin verificar cambios
         for road_id in section["edges"]:
             if road_id in road_segments_data:
-                old_color = road_segments_data[road_id].get('color', 'gray')
-                if old_color != new_color:
-                    edges_updated += 1
                 road_segments_data[road_id]['color'] = new_color
         
-        if edges_updated > 0:
-            color_changes.append(f"{section['segment_name']}: {edges_updated} edges → {new_color}")
+        # Solo para logging
+        color_summary.append(f"{section['segment_name'][:20]}: {occupancy_percentage:.1f}% → {new_color}")
     
-    if color_changes:
-        logging.info(f"🎨 CAMBIOS DE COLOR: {', '.join(color_changes)}")
-    else:
-        logging.info("🎨 Sin cambios de color en este intervalo")
+    logging.info(f"🎨 Colores actualizados: {len(sections)} segmentos procesados")
 
 def update_traffic_periodically():
     """Lógica de simulación con nueva regla de evacuación al 45%."""
