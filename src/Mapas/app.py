@@ -406,6 +406,17 @@ def health_check():
     """Endpoint simple para verificar que el servidor está vivo"""
     return jsonify({'status': 'ok', 'message': 'Server is running'}), 200
 
+@app.route('/api/status')
+def get_status():
+    """Endpoint para verificar el estado de inicialización"""
+    return jsonify({
+        'status': 'initializing' if not road_segments_data or not sections else 'ready',
+        'road_segments_loaded': len(road_segments_data),
+        'sections_loaded': len(sections),
+        'traffic_data_loaded': traffic_df is not None and not traffic_df.empty,
+        'intervals_count': len(time_intervals)
+    }), 200
+
 @app.route('/api/road_data')
 def get_road_data():
     route_segments = [road for road in road_segments_data.values() if road['color'] != 'gray']
