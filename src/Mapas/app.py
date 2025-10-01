@@ -371,6 +371,7 @@ def load_and_structure_data():
 
 def recalculate_segment_states():
     """Recalcula la densidad UCP y el color para todos los segmentos."""
+    color_changes = []
     for section in sections:
         total_ucp = 0
         for v_type, count in section['vehicle_counts'].items():
@@ -393,9 +394,22 @@ def recalculate_segment_states():
         else:
             new_color = 'red'
         
+        # Contar cuántos edges cambiaron de color
+        edges_updated = 0
         for road_id in section["edges"]:
             if road_id in road_segments_data:
+                old_color = road_segments_data[road_id].get('color', 'gray')
+                if old_color != new_color:
+                    edges_updated += 1
                 road_segments_data[road_id]['color'] = new_color
+        
+        if edges_updated > 0:
+            color_changes.append(f"{section['segment_name']}: {edges_updated} edges → {new_color}")
+    
+    if color_changes:
+        logging.info(f"🎨 CAMBIOS DE COLOR: {', '.join(color_changes)}")
+    else:
+        logging.info("🎨 Sin cambios de color en este intervalo")
 
 def update_traffic_periodically():
     """Lógica de simulación con nueva regla de evacuación al 45%."""
@@ -493,6 +507,17 @@ def get_status():
 @app.route('/api/road_data')
 def get_road_data():
     route_segments = [road for road in road_segments_data.values() if road['color'] != 'gray']
+    
+    # Log para debugging: contar colores
+    color_counts = {'green': 0, 'yellow': 0, 'red': 0}
+    for road in route_segments:
+        color = road.get('color', 'gray')
+        if color in color_counts:
+            color_counts[color] += 1
+    
+    logging.info(f"📡 /api/road_data → Enviando {len(route_segments)} segmentos: "
+                f"🟢{color_counts['green']} 🟡{color_counts['yellow']} 🔴{color_counts['red']}")
+    
     return jsonify(route_segments)
 
 @app.route('/api/traffic_data')
