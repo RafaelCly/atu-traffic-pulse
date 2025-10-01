@@ -57,24 +57,24 @@ const TrafficMap = () => {
 
   if (mapStatus === 'error') {
     return (
-      <div className="h-full w-full bg-gradient-to-br from-slate-50 to-slate-100 relative overflow-hidden rounded-lg flex items-center justify-center">
-        <div className="text-center p-8">
-          <AlertTriangle className="h-16 w-16 text-warning mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-foreground mb-2">
+      <div className="h-full w-full bg-gradient-to-br from-slate-50 to-slate-100 relative overflow-hidden rounded-lg flex items-center justify-center p-4">
+        <div className="text-center p-4 sm:p-8 max-w-md">
+          <AlertTriangle className="h-12 w-12 sm:h-16 sm:w-16 text-warning mx-auto mb-3 sm:mb-4" />
+          <h3 className="text-base sm:text-lg font-semibold text-foreground mb-2">
             Mapa de Tráfico No Disponible
           </h3>
-          <p className="text-muted-foreground mb-4">
+          <p className="text-sm sm:text-base text-muted-foreground mb-3 sm:mb-4">
             El servidor del mapa Python no está ejecutándose.
           </p>
-          <div className="space-y-2 text-sm text-muted-foreground">
+          <div className="space-y-2 text-xs sm:text-sm text-muted-foreground">
             <p>Para iniciar el mapa:</p>
-            <code className="block bg-muted p-2 rounded text-xs">
+            <code className="block bg-muted p-2 rounded text-[10px] sm:text-xs overflow-x-auto">
               cd src/Mapas && python app.py
             </code>
           </div>
           <Button 
             onClick={() => setMapStatus('loading')} 
-            className="mt-4"
+            className="mt-3 sm:mt-4 text-sm"
             variant="outline"
           >
             <RefreshCw className="h-4 w-4 mr-2" />
@@ -87,10 +87,10 @@ const TrafficMap = () => {
 
   if (mapStatus === 'loading') {
     return (
-      <div className="h-full w-full bg-gradient-to-br from-slate-50 to-slate-100 relative overflow-hidden rounded-lg flex items-center justify-center">
+      <div className="h-full w-full bg-gradient-to-br from-slate-50 to-slate-100 relative overflow-hidden rounded-lg flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Cargando mapa de tráfico...</p>
+          <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-primary mx-auto mb-3 sm:mb-4"></div>
+          <p className="text-sm sm:text-base text-muted-foreground">Cargando mapa de tráfico...</p>
         </div>
       </div>
     );
@@ -99,35 +99,37 @@ const TrafficMap = () => {
   return (
     <div className="h-full w-full relative overflow-hidden rounded-lg">
       {/* Controles del mapa */}
-      <div className="absolute top-4 right-4 z-10 flex gap-2">
-        <Badge variant="outline" className="bg-card/90 backdrop-blur-sm border-success">
-          <div className="w-2 h-2 bg-success rounded-full mr-2 animate-pulse" />
-          Tiempo Real
+      <div className="absolute top-2 sm:top-4 right-2 sm:right-4 z-10 flex flex-col sm:flex-row gap-1 sm:gap-2">
+        <Badge variant="outline" className="bg-card/90 backdrop-blur-sm border-success text-xs sm:text-sm">
+          <div className="w-2 h-2 bg-success rounded-full mr-1 sm:mr-2 animate-pulse" />
+          <span className="hidden sm:inline">Tiempo Real</span>
+          <span className="sm:hidden">Real</span>
         </Badge>
         <Button
           size="sm"
           variant="outline"
           onClick={handleRefresh}
-          className="bg-card/90 backdrop-blur-sm"
+          className="bg-card/90 backdrop-blur-sm h-7 sm:h-8 px-2 sm:px-3 text-xs sm:text-sm"
         >
-          <RefreshCw className="h-3 w-3 mr-1" />
-          Actualizar
+          <RefreshCw className="h-3 w-3 sm:mr-1" />
+          <span className="hidden sm:inline">Actualizar</span>
         </Button>
         <Button
           size="sm"
           variant="outline"
           onClick={openMapInNewTab}
-          className="bg-card/90 backdrop-blur-sm"
+          className="bg-card/90 backdrop-blur-sm h-7 sm:h-8 px-2 sm:px-3 text-xs sm:text-sm"
         >
-          <ExternalLink className="h-3 w-3 mr-1" />
-          Abrir
+          <ExternalLink className="h-3 w-3 sm:mr-1" />
+          <span className="hidden sm:inline">Abrir</span>
         </Button>
       </div>
 
       {/* Información de última actualización */}
-      <div className="absolute bottom-4 left-4 z-10">
-        <Badge variant="outline" className="bg-card/90 backdrop-blur-sm">
-          Última actualización: {lastUpdate.toLocaleTimeString()}
+      <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 z-10">
+        <Badge variant="outline" className="bg-card/90 backdrop-blur-sm text-[10px] sm:text-xs">
+          <span className="hidden sm:inline">Última actualización: </span>
+          {lastUpdate.toLocaleTimeString()}
         </Badge>
       </div>
 

@@ -53,25 +53,25 @@ const KPICard = ({ title, value, icon: Icon, trend, trendValue, color }: KPICard
   };
 
   return (
-    <Card className="relative overflow-hidden border-0 shadow-xl bg-gradient-to-br from-card via-card to-card/80 hover:shadow-2xl transition-all duration-300 group">
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className={cn("p-4 rounded-xl border-2 shadow-lg group-hover:scale-110 transition-transform duration-300", getColorClasses())}>
-            <Icon className="h-7 w-7" />
+    <Card className="relative overflow-hidden border-0 shadow-xl bg-gradient-to-br from-card via-card to-card/80 hover:shadow-2xl transition-all duration-300 group w-full">
+      <CardContent className="p-4 sm:p-6">
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <div className={cn("p-3 sm:p-4 rounded-xl border-2 shadow-lg group-hover:scale-110 transition-transform duration-300", getColorClasses())}>
+            <Icon className="h-5 w-5 sm:h-7 sm:w-7" />
           </div>
-          <Badge variant="outline" className={cn("gap-2 px-3 py-1 font-semibold", getTrendColor())}>
-            <TrendIcon className="h-4 w-4" />
+          <Badge variant="outline" className={cn("gap-1 sm:gap-2 px-2 sm:px-3 py-1 font-semibold text-xs sm:text-sm", getTrendColor())}>
+            <TrendIcon className="h-3 w-3 sm:h-4 sm:w-4" />
             {trendValue}
           </Badge>
         </div>
         
-        <div className="space-y-2">
-          <h3 className="text-3xl font-bold text-foreground tracking-tight">{value}</h3>
-          <p className="text-sm font-medium text-muted-foreground">{title}</p>
+        <div className="space-y-1 sm:space-y-2">
+          <h3 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">{value}</h3>
+          <p className="text-xs sm:text-sm font-medium text-muted-foreground">{title}</p>
         </div>
         
         {/* Enhanced background pattern with better opacity */}
-        <div className="absolute -top-4 -right-4 w-24 h-24 opacity-[0.03] rotate-12 group-hover:rotate-6 transition-transform duration-500">
+        <div className="absolute -top-4 -right-4 w-20 h-20 sm:w-24 sm:h-24 opacity-[0.03] rotate-12 group-hover:rotate-6 transition-transform duration-500">
           <Icon className="w-full h-full" />
         </div>
         

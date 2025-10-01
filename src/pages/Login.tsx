@@ -39,56 +39,56 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/10 flex items-center justify-center p-4">
+    <div className="min-h-screen w-full bg-gradient-to-br from-primary/5 via-background to-accent/10 flex items-center justify-center p-4 sm:p-6">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="mx-auto w-16 h-16 bg-primary rounded-full flex items-center justify-center mb-4 shadow-lg">
-            <Shield className="h-8 w-8 text-primary-foreground" />
+        <div className="text-center mb-6 sm:mb-8">
+          <div className="mx-auto w-14 h-14 sm:w-16 sm:h-16 bg-primary rounded-full flex items-center justify-center mb-3 sm:mb-4 shadow-lg">
+            <Shield className="h-7 w-7 sm:h-8 sm:w-8 text-primary-foreground" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">TheUNIAnalytics - Control de Tráfico</h1>
-          <p className="text-muted-foreground">Sistema de Monitoreo Inteligente</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2 px-4">TheUNIAnalytics - Control de Tráfico</h1>
+          <p className="text-sm sm:text-base text-muted-foreground px-4">Sistema de Monitoreo Inteligente</p>
         </div>
 
         <Card className="shadow-xl border-0 bg-card/50 backdrop-blur-sm">
-          <CardHeader className="space-y-1 pb-6">
-            <CardTitle className="text-2xl font-semibold text-center">Iniciar Sesión</CardTitle>
-            <p className="text-sm text-muted-foreground text-center">
+          <CardHeader className="space-y-1 pb-4 sm:pb-6 px-4 sm:px-6">
+            <CardTitle className="text-xl sm:text-2xl font-semibold text-center">Iniciar Sesión</CardTitle>
+            <p className="text-xs sm:text-sm text-muted-foreground text-center">
               Acceda al centro de control de tráfico urbano
             </p>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-4 sm:px-6">
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Usuario</Label>
+                <Label htmlFor="email" className="text-sm">Usuario</Label>
                 <Input
                   id="email"
                   type="email"
                   placeholder="operador@theunianalytics.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="h-11"
+                  className="h-10 sm:h-11 w-full"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Contraseña</Label>
+                <Label htmlFor="password" className="text-sm">Contraseña</Label>
                 <Input
                   id="password"
                   type="password"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="h-11"
+                  className="h-10 sm:h-11 w-full"
                 />
               </div>
               <Button
                 type="submit"
-                className="w-full h-11 bg-gradient-to-r from-primary to-primary-glow hover:from-primary/90 hover:to-primary-glow/90 transition-all duration-200 shadow-lg"
+                className="w-full h-10 sm:h-11 bg-gradient-to-r from-primary to-primary-glow hover:from-primary/90 hover:to-primary-glow/90 transition-all duration-200 shadow-lg text-sm sm:text-base"
                 disabled={isLoading}
               >
                 {isLoading ? (
                   <div className="flex items-center gap-2">
                     <Zap className="h-4 w-4 animate-pulse" />
-                    Verificando acceso...
+                    <span className="text-sm sm:text-base">Verificando acceso...</span>
                   </div>
                 ) : (
                   "Acceder al Sistema"
@@ -96,8 +96,8 @@ const Login = () => {
               </Button>
             </form>
             
-            <div className="mt-6 pt-4 border-t border-border/50 text-center">
-              <p className="text-xs text-muted-foreground">
+            <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-border/50 text-center">
+              <p className="text-[10px] sm:text-xs text-muted-foreground">
                 Sistema seguro - Solo personal autorizado
               </p>
             </div>

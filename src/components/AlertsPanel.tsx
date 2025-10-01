@@ -162,11 +162,11 @@ const AlertsPanel = () => {
   };
 
   return (
-    <div className="space-y-3 max-h-[400px] overflow-y-auto px-6 pb-6">
+    <div className="space-y-3 max-h-[400px] sm:max-h-[500px] overflow-y-auto px-3 sm:px-6 pb-4 sm:pb-6">
       {alerts.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground">
-          <AlertTriangle className="h-8 w-8 mx-auto mb-2 opacity-50" />
-          <p>No hay alertas activas</p>
+        <div className="text-center py-6 sm:py-8 text-muted-foreground">
+          <AlertTriangle className="h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-2 opacity-50" />
+          <p className="text-sm sm:text-base">No hay alertas activas</p>
         </div>
       ) : (
         alerts.map((alert) => {
@@ -175,17 +175,17 @@ const AlertsPanel = () => {
             <div
               key={alert.id}
               className={cn(
-                "border-l-4 rounded-r-lg p-4 space-y-2 transition-all duration-200 hover:shadow-md",
+                "border-l-4 rounded-r-lg p-3 sm:p-4 space-y-2 transition-all duration-200 hover:shadow-md",
                 getPriorityColor(alert.priority)
               )}
             >
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-2">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
                   <Icon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                  <h4 className="font-medium text-sm">{alert.title}</h4>
+                  <h4 className="font-medium text-xs sm:text-sm truncate">{alert.title}</h4>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant={getPriorityBadge(alert.priority)} className="text-xs">
+                <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                  <Badge variant={getPriorityBadge(alert.priority)} className="text-[10px] sm:text-xs px-1.5 sm:px-2">
                     {alert.priority === "high" ? "Alta" : alert.priority === "medium" ? "Media" : "Baja"}
                   </Badge>
                   <Button
@@ -200,16 +200,17 @@ const AlertsPanel = () => {
               </div>
               
               <div className="space-y-1">
-                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  {alert.time} - {alert.location}
+                <p className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-1 flex-wrap">
+                  <Clock className="h-3 w-3 flex-shrink-0" />
+                  <span>{alert.time} - </span>
+                  <span className="truncate">{alert.location}</span>
                 </p>
-                <p className="text-xs text-foreground">{alert.description}</p>
+                <p className="text-[10px] sm:text-xs text-foreground break-words">{alert.description}</p>
                 
                 {/* Mostrar valor específico o tipo de incidente */}
                 {alert.value && (
                   <div className="flex items-center gap-1 mt-1">
-                    <Badge variant="outline" className="text-xs bg-destructive/10 text-destructive border-destructive/20">
+                    <Badge variant="outline" className="text-[10px] sm:text-xs bg-destructive/10 text-destructive border-destructive/20">
                       {alert.type === "congestion_critical" ? "Nivel: " : 
                        alert.type === "travel_time_exceeded" ? "Exceso: " :
                        alert.type === "traffic_light" ? "Duración: " : "Valor: "}
@@ -220,7 +221,7 @@ const AlertsPanel = () => {
                 
                 {alert.incidentType && (
                   <div className="flex items-center gap-1 mt-1">
-                    <Badge variant="outline" className="text-xs bg-warning/10 text-warning border-warning/20">
+                    <Badge variant="outline" className="text-[10px] sm:text-xs bg-warning/10 text-warning border-warning/20 max-w-full truncate">
                       Tipo: {alert.incidentType}
                     </Badge>
                   </div>
@@ -228,14 +229,14 @@ const AlertsPanel = () => {
               </div>
               
               <div className="flex gap-2 pt-2">
-                <Button variant="outline" size="sm" className="h-7 text-xs">
-                  <Eye className="h-3 w-3 mr-1" />
-                  Ver
+                <Button variant="outline" size="sm" className="h-6 sm:h-7 text-[10px] sm:text-xs px-2 sm:px-3">
+                  <Eye className="h-3 w-3 sm:mr-1" />
+                  <span className="hidden sm:inline">Ver</span>
                 </Button>
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="h-7 text-xs"
+                  className="h-6 sm:h-7 text-[10px] sm:text-xs px-2 sm:px-3"
                   onClick={() => handleResolveAlert(alert.id)}
                 >
                   Resolver

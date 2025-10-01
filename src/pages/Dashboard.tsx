@@ -105,47 +105,46 @@ const Dashboard = () => {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/20">
+    <div className="min-h-screen w-full bg-gradient-to-br from-background via-background to-accent/20">
       {/* Enhanced Header */}
       <header className="bg-card/95 backdrop-blur-sm border-b border-border/50 shadow-lg sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary-glow rounded-xl flex items-center justify-center mr-4 shadow-lg">
-                <Car className="h-7 w-7 text-primary-foreground" />
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-4 sm:h-20 gap-3 sm:gap-0">
+            <div className="flex items-center w-full sm:w-auto">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-primary to-primary-glow rounded-xl flex items-center justify-center mr-3 sm:mr-4 shadow-lg flex-shrink-0">
+                <Car className="h-5 w-5 sm:h-7 sm:w-7 text-primary-foreground" />
               </div>
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+              <div className="flex-1 min-w-0">
+                <h1 className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent truncate">
                   TheUNIAnalytics Centro de Control
                 </h1>
-                <p className="text-sm text-muted-foreground font-medium">Sistema de Monitoreo con Cámaras y GPS</p>
+                <p className="text-xs sm:text-sm text-muted-foreground font-medium hidden sm:block">Sistema de Monitoreo con Cámaras y GPS</p>
               </div>
             </div>
             
-            <div className="flex items-center space-x-6">
+            <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-2 sm:gap-6">
               {/* Status Indicators */}
-              {/* Status Indicators */}
-              <div className="hidden sm:flex items-center space-x-4">
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-success/10 rounded-full">
-                  <div className={`w-2 h-2 rounded-full mr-2 animate-pulse ${isServerConnected ? 'bg-success' : 'bg-warning'}`} />
-                  <span className={`text-xs font-medium ${isServerConnected ? 'text-success' : 'text-warning'}`}>
-                    {isServerConnected ? 'Sistema Activo' : 'Modo Simulación'}
+              <div className="flex items-center space-x-2 sm:space-x-4 overflow-x-auto">
+                <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-success/10 rounded-full whitespace-nowrap flex-shrink-0">
+                  <div className={`w-2 h-2 rounded-full animate-pulse ${isServerConnected ? 'bg-success' : 'bg-warning'}`} />
+                  <span className={`text-[10px] sm:text-xs font-medium ${isServerConnected ? 'text-success' : 'text-warning'}`}>
+                    {isServerConnected ? 'Activo' : 'Simulación'}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-full">
+                <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-full flex-shrink-0">
                   <Camera className="h-3 w-3 text-primary" />
                   <span className="text-xs font-medium text-primary">{trafficData.activeCameras} Cámaras</span>
                 </div>
                 {isServerConnected && (
-                  <div className="flex items-center gap-2 px-3 py-1.5 bg-success/10 rounded-full">
+                  <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-success/10 rounded-full flex-shrink-0">
                     <span className="text-xs font-medium text-success">Excel Conectado</span>
                   </div>
                 )}
               </div>
               
-              <div className="text-right hidden md:block">
-                <p className="text-sm font-semibold">{user.name}</p>
-                <p className="text-xs text-muted-foreground">
+              <div className="text-right hidden lg:block flex-shrink-0">
+                <p className="text-sm font-semibold truncate">{user.name}</p>
+                <p className="text-xs text-muted-foreground whitespace-nowrap">
                   {currentTime.toLocaleTimeString()} • {currentTime.toLocaleDateString()}
                 </p>
               </div>
@@ -154,22 +153,22 @@ const Dashboard = () => {
                 variant="ghost"
                 size="sm"
                 onClick={handleLogout}
-                className="text-muted-foreground hover:text-foreground hover:bg-destructive/10"
+                className="text-muted-foreground hover:text-foreground hover:bg-destructive/10 flex-shrink-0"
               >
-                <LogOut className="h-4 w-4 mr-2" />
-                Salir
+                <LogOut className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Salir</span>
               </Button>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto p-6 space-y-8">
+      <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6 md:space-y-8">
         {/* Intervalo Actual - Prominente */}
         <IntervalDisplay />
 
         {/* KPIs principales - Conectados con datos reales */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           <KPICard
             title="% Ocupación UCP"
             value={`${Math.round(kpis.overallOccupancyPercentage)}%`}
@@ -197,36 +196,36 @@ const Dashboard = () => {
         </div>
 
         {/* Main Dashboard with Tabs for better organization */}
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:grid-cols-3">
-            <TabsTrigger value="overview" className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              <span className="hidden sm:inline">Vista General</span>
+        <Tabs defaultValue="overview" className="space-y-4 sm:space-y-6">
+          <TabsList className="grid w-full grid-cols-3 h-auto">
+            <TabsTrigger value="overview" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2">
+              <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span>Vista General</span>
             </TabsTrigger>
-            <TabsTrigger value="map" className="flex items-center gap-2">
-              <MapPin className="h-4 w-4" />
-              <span className="hidden sm:inline">Mapa</span>
+            <TabsTrigger value="map" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2">
+              <MapPin className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span>Mapa</span>
             </TabsTrigger>
-            <TabsTrigger value="alerts" className="flex items-center gap-2">
-              <Bell className="h-4 w-4" />
-              <span className="hidden sm:inline">Alertas</span>
+            <TabsTrigger value="alerts" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm py-2">
+              <Bell className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span>Alertas</span>
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="space-y-6">
+          <TabsContent value="overview" className="space-y-4 sm:space-y-6">
             {/* Solo mostrar gráficos de métricas */}
             <MetricsChart />
           </TabsContent>
 
           <TabsContent value="map">
-            <Card className="overflow-hidden border-0 shadow-xl bg-gradient-to-br from-card to-card/80 h-[700px]">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-3">
-                  <MapPin className="h-6 w-6 text-primary" />
-                  Vista Completa del Mapa de Tráfico
+            <Card className="overflow-hidden border-0 shadow-xl bg-gradient-to-br from-card to-card/80 h-[500px] sm:h-[600px] lg:h-[700px]">
+              <CardHeader className="pb-3 sm:pb-4 px-4 sm:px-6">
+                <CardTitle className="flex items-center gap-2 sm:gap-3 text-base sm:text-lg">
+                  <MapPin className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+                  <span className="truncate">Vista Completa del Mapa de Tráfico</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-0 h-[620px]">
+              <CardContent className="p-0 h-[calc(100%-60px)] sm:h-[calc(100%-70px)]">
                 <TrafficMap />
               </CardContent>
             </Card>
@@ -234,13 +233,13 @@ const Dashboard = () => {
 
           <TabsContent value="alerts">
             <Card className="overflow-hidden border-0 shadow-xl bg-gradient-to-br from-card to-card/80">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-3">
-                  <Bell className="h-6 w-6 text-warning" />
-                  Centro de Alertas y Notificaciones
+              <CardHeader className="pb-3 sm:pb-4 px-4 sm:px-6">
+                <CardTitle className="flex items-center gap-2 sm:gap-3 text-base sm:text-lg">
+                  <Bell className="h-5 w-5 sm:h-6 sm:w-6 text-warning" />
+                  <span className="truncate">Centro de Alertas y Notificaciones</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="px-4 sm:px-6">
                 <AlertsPanel />
               </CardContent>
             </Card>

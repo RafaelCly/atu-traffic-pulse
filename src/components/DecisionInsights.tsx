@@ -65,21 +65,21 @@ const recommendations = [
 
 const DecisionInsights = () => {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Insights Críticos */}
       <Card className="overflow-hidden border-0 shadow-xl bg-gradient-to-br from-card to-card/80">
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-3">
-            <div className="p-2 bg-warning/10 rounded-lg">
-              <Target className="h-5 w-5 text-warning" />
+        <CardHeader className="pb-3 sm:pb-4 px-4 sm:px-6">
+          <CardTitle className="flex items-center gap-2 sm:gap-3">
+            <div className="p-1.5 sm:p-2 bg-warning/10 rounded-lg flex-shrink-0">
+              <Target className="h-4 w-4 sm:h-5 sm:w-5 text-warning" />
             </div>
-            <div>
-              <h3 className="text-lg font-semibold">Insights para Decisiones</h3>
-              <p className="text-sm text-muted-foreground">Recomendaciones basadas en IA</p>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-base sm:text-lg font-semibold truncate">Insights para Decisiones</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground truncate">Recomendaciones basadas en IA</p>
             </div>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6">
           {insights.map((insight, index) => {
             const Icon = insight.icon;
             const getBadgeColor = (priority: string) => {
@@ -91,33 +91,33 @@ const DecisionInsights = () => {
             };
 
             return (
-              <div key={index} className="p-4 bg-accent/30 rounded-lg border border-border/50">
-                <div className="flex items-start gap-3">
-                  <div className={`p-2 rounded-lg ${
+              <div key={index} className="p-3 sm:p-4 bg-accent/30 rounded-lg border border-border/50">
+                <div className="flex items-start gap-2 sm:gap-3">
+                  <div className={`p-1.5 sm:p-2 rounded-lg flex-shrink-0 ${
                     insight.type === 'critical' ? 'bg-destructive/10' :
                     insight.type === 'optimization' ? 'bg-warning/10' : 'bg-primary/10'
                   }`}>
-                    <Icon className={`h-4 w-4 ${
+                    <Icon className={`h-3 w-3 sm:h-4 sm:w-4 ${
                       insight.type === 'critical' ? 'text-destructive' :
                       insight.type === 'optimization' ? 'text-warning' : 'text-primary'
                     }`} />
                   </div>
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-semibold">{insight.title}</h4>
-                      <Badge variant={getBadgeColor(insight.priority)}>
+                  <div className="flex-1 space-y-2 min-w-0">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
+                      <h4 className="font-semibold text-sm sm:text-base truncate">{insight.title}</h4>
+                      <Badge variant={getBadgeColor(insight.priority)} className="text-xs self-start sm:self-auto flex-shrink-0">
                         {insight.priority}
                       </Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground">{insight.description}</p>
-                    <div className="flex items-center justify-between">
+                    <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">{insight.description}</p>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Clock className="h-3 w-3" />
+                        <Clock className="h-3 w-3 flex-shrink-0" />
                         ETA: {insight.eta}
                       </div>
-                      <Button size="sm" variant="outline" className="h-7">
-                        {insight.action}
-                        <ArrowRight className="h-3 w-3 ml-1" />
+                      <Button size="sm" variant="outline" className="h-6 sm:h-7 text-xs w-full sm:w-auto">
+                        <span className="truncate">{insight.action}</span>
+                        <ArrowRight className="h-3 w-3 ml-1 flex-shrink-0" />
                       </Button>
                     </div>
                   </div>
@@ -130,33 +130,33 @@ const DecisionInsights = () => {
 
       {/* Recomendaciones por Zona */}
       <Card className="overflow-hidden border-0 shadow-xl bg-gradient-to-br from-card to-card/80">
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-3">
-            <div className="p-2 bg-success/10 rounded-lg">
-              <MapPin className="h-5 w-5 text-success" />
+        <CardHeader className="pb-3 sm:pb-4 px-4 sm:px-6">
+          <CardTitle className="flex items-center gap-2 sm:gap-3">
+            <div className="p-1.5 sm:p-2 bg-success/10 rounded-lg flex-shrink-0">
+              <MapPin className="h-4 w-4 sm:h-5 sm:w-5 text-success" />
             </div>
-            <div>
-              <h3 className="text-lg font-semibold">Recomendaciones por Zona</h3>
-              <p className="text-sm text-muted-foreground">Acciones prioritarias</p>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-base sm:text-lg font-semibold truncate">Recomendaciones por Zona</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground truncate">Acciones prioritarias</p>
             </div>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-2 sm:space-y-3 px-4 sm:px-6">
           {recommendations.map((rec, index) => (
-            <div key={index} className="p-3 bg-accent/20 rounded-lg border border-border/30">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="font-medium flex items-center gap-2">
-                  <MapPin className="h-3 w-3 text-primary" />
-                  {rec.zone}
+            <div key={index} className="p-2.5 sm:p-3 bg-accent/20 rounded-lg border border-border/30">
+              <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+                <h4 className="font-medium text-sm sm:text-base flex items-center gap-1 sm:gap-2 truncate flex-1">
+                  <MapPin className="h-3 w-3 text-primary flex-shrink-0" />
+                  <span className="truncate">{rec.zone}</span>
                 </h4>
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="outline" className="text-[10px] sm:text-xs flex-shrink-0 ml-2">
                   {rec.timeline}
                 </Badge>
               </div>
-              <p className="text-sm text-muted-foreground mb-2">{rec.action}</p>
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-3 w-3 text-success" />
-                <span className="text-xs font-medium text-success">{rec.impact}</span>
+              <p className="text-xs sm:text-sm text-muted-foreground mb-1.5 sm:mb-2 line-clamp-2">{rec.action}</p>
+              <div className="flex items-center gap-1 sm:gap-2">
+                <TrendingUp className="h-3 w-3 text-success flex-shrink-0" />
+                <span className="text-xs font-medium text-success truncate">{rec.impact}</span>
               </div>
             </div>
           ))}
@@ -165,34 +165,34 @@ const DecisionInsights = () => {
 
       {/* Métricas de Rendimiento */}
       <Card className="overflow-hidden border-0 shadow-xl bg-gradient-to-br from-card to-card/80">
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <Users className="h-5 w-5 text-primary" />
+        <CardHeader className="pb-3 sm:pb-4 px-4 sm:px-6">
+          <CardTitle className="flex items-center gap-2 sm:gap-3">
+            <div className="p-1.5 sm:p-2 bg-primary/10 rounded-lg flex-shrink-0">
+              <Users className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
             </div>
-            <div>
-              <h3 className="text-lg font-semibold">Impacto de Decisiones</h3>
-              <p className="text-sm text-muted-foreground">Resultados de acciones tomadas</p>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-base sm:text-lg font-semibold truncate">Impacto de Decisiones</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground truncate">Resultados de acciones tomadas</p>
             </div>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="p-3 bg-success/10 rounded-lg text-center">
-              <div className="text-2xl font-bold text-success">-23%</div>
-              <div className="text-xs text-muted-foreground">Tiempo de Viaje</div>
+        <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6">
+          <div className="grid grid-cols-2 gap-2 sm:gap-4">
+            <div className="p-2 sm:p-3 bg-success/10 rounded-lg text-center">
+              <div className="text-xl sm:text-2xl font-bold text-success">-23%</div>
+              <div className="text-[10px] sm:text-xs text-muted-foreground">Tiempo de Viaje</div>
             </div>
-            <div className="p-3 bg-primary/10 rounded-lg text-center">
-              <div className="text-2xl font-bold text-primary">+18%</div>
-              <div className="text-xs text-muted-foreground">Flujo Vehicular</div>
+            <div className="p-2 sm:p-3 bg-primary/10 rounded-lg text-center">
+              <div className="text-xl sm:text-2xl font-bold text-primary">+18%</div>
+              <div className="text-[10px] sm:text-xs text-muted-foreground">Flujo Vehicular</div>
             </div>
-            <div className="p-3 bg-warning/10 rounded-lg text-center">
-              <div className="text-2xl font-bold text-warning">-45%</div>
-              <div className="text-xs text-muted-foreground">Incidencias</div>
+            <div className="p-2 sm:p-3 bg-warning/10 rounded-lg text-center">
+              <div className="text-xl sm:text-2xl font-bold text-warning">-45%</div>
+              <div className="text-[10px] sm:text-xs text-muted-foreground">Incidencias</div>
             </div>
-            <div className="p-3 bg-success/10 rounded-lg text-center">
-              <div className="text-2xl font-bold text-success">92%</div>
-              <div className="text-xs text-muted-foreground">Satisfacción</div>
+            <div className="p-2 sm:p-3 bg-success/10 rounded-lg text-center">
+              <div className="text-xl sm:text-2xl font-bold text-success">92%</div>
+              <div className="text-[10px] sm:text-xs text-muted-foreground">Satisfacción</div>
             </div>
           </div>
         </CardContent>

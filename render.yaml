@@ -1,0 +1,30 @@
+services:
+  # Frontend - React + Vite
+  - type: web
+    name: atu-traffic-pulse-frontend
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm run preview -- --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: NODE_VERSION
+        value: 18.18.0
+      - key: NODE_ENV
+        value: production
+    healthCheckPath: /
+
+  # Backend - Python Flask (Mapas)
+  - type: web
+    name: atu-traffic-pulse-backend
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python src/Mapas/app.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: FLASK_ENV
+        value: production
+      - key: PORT
+        value: 5000
+    healthCheckPath: /api/debug

@@ -318,72 +318,81 @@ export default function MetricsChart() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <TrendingUp className="w-5 h-5" />
-          Análisis de Tráfico por Intervalos
-          <Badge variant="secondary" className="ml-auto">
-            <Clock className="w-4 h-4 mr-1" />
-            Actual: {currentInterval || 'Cargando...'}
-          </Badge>
-          {/* Indicador de estado del componente */}
-          <div className="flex items-center gap-1 ml-2">
-            <div className={`w-2 h-2 rounded-full ${hasError ? 'bg-red-500' : 'bg-green-500'} animate-pulse`} />
-            <span className="text-xs text-gray-500">
-              {hasError ? 'Error' : 'Activo'}
-            </span>
+    <Card className="w-full">
+      <CardHeader className="px-4 sm:px-6">
+        <CardTitle className="flex flex-col sm:flex-row sm:items-center gap-2 text-base sm:text-lg">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+            <span className="truncate">Análisis de Tráfico por Intervalos</span>
+          </div>
+          <div className="flex items-center gap-2 sm:ml-auto">
+            <Badge variant="secondary" className="text-xs">
+              <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+              Actual: {currentInterval || 'Cargando...'}
+            </Badge>
+            {/* Indicador de estado del componente */}
+            <div className="flex items-center gap-1">
+              <div className={`w-2 h-2 rounded-full ${hasError ? 'bg-red-500' : 'bg-green-500'} animate-pulse`} />
+              <span className="text-xs text-gray-500 hidden sm:inline">
+                {hasError ? 'Error' : 'Activo'}
+              </span>
+            </div>
           </div>
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-4 sm:px-6">
         {/* Debug info */}
-        <div className="text-xs text-gray-400 mb-4 p-2 bg-gray-50 rounded">
-          📊 Gráfico: {chartData.length} puntos | 
-          📋 Tabla: {filteredVehicleData.length} registros | 
-          🔄 Cargando: {loading ? 'Sí' : 'No'} | 
-          ⚠️ Error: {error ? 'Sí' : 'No'}
+        <div className="text-xs text-gray-400 mb-4 p-2 bg-gray-50 rounded overflow-x-auto">
+          <div className="whitespace-nowrap">
+            📊 Gráfico: {chartData.length} puntos | 
+            📋 Tabla: {filteredVehicleData.length} registros | 
+            🔄 Cargando: {loading ? 'Sí' : 'No'} | 
+            ⚠️ Error: {error ? 'Sí' : 'No'}
+          </div>
         </div>
         
         {/* Gráfico de UCP */}
-        <div className="mb-8">
-          <h3 className="text-lg font-semibold mb-4">UCP por Intervalo</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis 
-                dataKey="interval" 
-                angle={-45}
-                textAnchor="end"
-                height={60}
-                fontSize={12}
-              />
-              <YAxis />
-              <Tooltip formatter={formatTooltip} />
-              <Legend />
-              <Line 
-                type="monotone" 
-                dataKey="totalUCP" 
-                stroke="#3b82f6" 
-                strokeWidth={2}
-                name="UCP Total"
-                dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
-                activeDot={{ r: 6 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+        <div className="mb-6 sm:mb-8">
+          <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">UCP por Intervalo</h3>
+          <div className="w-full overflow-x-auto">
+            <ResponsiveContainer width="100%" height={250} minWidth={300}>
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis 
+                  dataKey="interval" 
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
+                  fontSize={10}
+                  interval="preserveStartEnd"
+                />
+                <YAxis fontSize={10} />
+                <Tooltip formatter={formatTooltip} />
+                <Legend wrapperStyle={{ fontSize: '12px' }} />
+                <Line 
+                  type="monotone" 
+                  dataKey="totalUCP" 
+                  stroke="#3b82f6" 
+                  strokeWidth={2}
+                  name="UCP Total"
+                  dot={{ fill: '#3b82f6', strokeWidth: 2, r: 3 }}
+                  activeDot={{ r: 5 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
         {/* Tabla con filtros de vehículos */}
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Vehículos por Intervalo y Segmento</h3>
+          <h3 className="text-base sm:text-lg font-semibold">Vehículos por Intervalo y Segmento</h3>
           
           {/* Filtros */}
-          <div className="flex flex-wrap gap-4 p-4 bg-gray-50 rounded-lg">
-            <div className="flex flex-col">
-              <label className="text-sm font-medium mb-1">Intervalo:</label>
+          <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-lg">
+            <div className="flex flex-col flex-1 min-w-[200px]">
+              <label className="text-xs sm:text-sm font-medium mb-1">Intervalo:</label>
               <select 
-                className="px-3 py-2 border rounded-md min-w-[150px]"
+                className="px-2 sm:px-3 py-2 border rounded-md w-full text-sm"
                 value={selectedInterval}
                 onChange={(e) => setSelectedInterval(e.target.value)}
               >
@@ -394,10 +403,10 @@ export default function MetricsChart() {
               </select>
             </div>
             
-            <div className="flex flex-col">
-              <label className="text-sm font-medium mb-1">Segmento:</label>
+            <div className="flex flex-col flex-1 min-w-[200px]">
+              <label className="text-xs sm:text-sm font-medium mb-1">Segmento:</label>
               <select 
-                className="px-3 py-2 border rounded-md min-w-[250px]"
+                className="px-2 sm:px-3 py-2 border rounded-md w-full text-sm"
                 value={selectedSegment}
                 onChange={(e) => setSelectedSegment(e.target.value)}
               >
@@ -412,7 +421,7 @@ export default function MetricsChart() {
               <Button 
                 onClick={handleSearchClick}
                 disabled={tableLoading}
-                className="px-4 py-2"
+                className="px-3 sm:px-4 py-2 w-full sm:w-auto text-sm"
               >
                 {tableLoading ? 'Cargando...' : 'Buscar'}
               </Button>
@@ -421,16 +430,16 @@ export default function MetricsChart() {
 
           {/* Tabla de resultados */}
           <div className="border rounded-lg overflow-hidden">
-            <div className="max-h-96 overflow-y-auto">
-              <table className="w-full">
+            <div className="max-h-96 overflow-y-auto overflow-x-auto">
+              <table className="w-full min-w-[600px]">
                 <thead className="bg-gray-50 sticky top-0">
                   <tr>
-                    <th className="px-4 py-3 text-left text-sm font-medium">Intervalo</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium">Segmento</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium">Total Vehículos</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium">UCP</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium">Ocupación</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium">Acciones</th>
+                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-medium">Intervalo</th>
+                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-medium">Segmento</th>
+                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-medium">Total Veh.</th>
+                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-medium">UCP</th>
+                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-medium">Ocupación</th>
+                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-medium">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -450,53 +459,53 @@ export default function MetricsChart() {
                     return (
                     <React.Fragment key={`${row.interval}-${row.segmentId}-${index}`}>
                       <tr className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                        <td className="px-4 py-3 text-sm">{safeRow.interval}</td>
-                        <td className="px-4 py-3 text-sm">{safeRow.segmentName}</td>
-                        <td className="px-4 py-3 text-sm font-medium">{safeRow.totalVehicles}</td>
-                        <td className="px-4 py-3 text-sm">{safeRow.ucp.toFixed(1)}</td>
-                        <td className="px-4 py-3 text-sm">
+                        <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm truncate max-w-[100px]">{safeRow.interval}</td>
+                        <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm truncate max-w-[150px]">{safeRow.segmentName}</td>
+                        <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-medium">{safeRow.totalVehicles}</td>
+                        <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">{safeRow.ucp.toFixed(1)}</td>
+                        <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">
                           <Badge 
                             variant="secondary" 
-                            className={`${getOcupacionColor(safeRow.ocupacion)} text-white`}
+                            className={`${getOcupacionColor(safeRow.ocupacion)} text-white text-xs`}
                           >
                             {safeRow.ocupacion.toFixed(1)}%
                           </Badge>
                         </td>
-                        <td className="px-4 py-3 text-sm">
+                        <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => toggleRowDetail(index)}
-                            className="flex items-center gap-1"
+                            className="flex items-center gap-1 text-xs px-2 py-1"
                           >
                             {expandedRows.has(index) ? 
-                              <ChevronDown className="w-4 h-4" /> : 
-                              <ChevronRight className="w-4 h-4" />
+                              <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4" /> : 
+                              <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4" />
                             }
-                            Detalle
+                            <span className="hidden sm:inline">Detalle</span>
                           </Button>
                         </td>
                       </tr>
                       
                       {expandedRows.has(index) && (
                         <tr>
-                          <td colSpan={6} className="px-4 py-3 bg-gray-100">
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                              <div className="text-center p-3 bg-white rounded border">
-                                <div className="text-2xl font-bold text-blue-600">{safeRow.autos}</div>
-                                <div className="text-sm text-gray-600">Autos</div>
+                          <td colSpan={6} className="px-2 sm:px-4 py-2 sm:py-3 bg-gray-100">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+                              <div className="text-center p-2 sm:p-3 bg-white rounded border">
+                                <div className="text-lg sm:text-2xl font-bold text-blue-600">{safeRow.autos}</div>
+                                <div className="text-xs sm:text-sm text-gray-600">Autos</div>
                               </div>
-                              <div className="text-center p-3 bg-white rounded border">
-                                <div className="text-2xl font-bold text-red-600">{safeRow.buses}</div>
-                                <div className="text-sm text-gray-600">Buses</div>
+                              <div className="text-center p-2 sm:p-3 bg-white rounded border">
+                                <div className="text-lg sm:text-2xl font-bold text-red-600">{safeRow.buses}</div>
+                                <div className="text-xs sm:text-sm text-gray-600">Buses</div>
                               </div>
-                              <div className="text-center p-3 bg-white rounded border">
-                                <div className="text-2xl font-bold text-green-600">{safeRow.motos}</div>
-                                <div className="text-sm text-gray-600">Motos</div>
+                              <div className="text-center p-2 sm:p-3 bg-white rounded border">
+                                <div className="text-lg sm:text-2xl font-bold text-green-600">{safeRow.motos}</div>
+                                <div className="text-xs sm:text-sm text-gray-600">Motos</div>
                               </div>
-                              <div className="text-center p-3 bg-white rounded border">
-                                <div className="text-2xl font-bold text-yellow-600">{safeRow.camionetas}</div>
-                                <div className="text-sm text-gray-600">Camionetas</div>
+                              <div className="text-center p-2 sm:p-3 bg-white rounded border">
+                                <div className="text-lg sm:text-2xl font-bold text-yellow-600">{safeRow.camionetas}</div>
+                                <div className="text-xs sm:text-sm text-gray-600">Camionetas</div>
                               </div>
                             </div>
                           </td>
@@ -508,7 +517,7 @@ export default function MetricsChart() {
               </table>
               
               {filteredVehicleData.length === 0 && !tableLoading && (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-6 sm:py-8 text-gray-500 text-sm">
                   {selectedInterval || currentInterval ? 
                     'No se encontraron datos para los filtros seleccionados' :
                     'Selecciona un intervalo para ver los datos'
@@ -517,7 +526,7 @@ export default function MetricsChart() {
               )}
               
               {tableLoading && (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-6 sm:py-8 text-gray-500 text-sm">
                   Cargando datos de vehículos...
                 </div>
               )}

@@ -1,73 +1,219 @@
-# Welcome to your Lovable project
+# 🚦 ATU Traffic Pulse - Sistema de Monitoreo de Tráfico
 
-## Project info
+Sistema inteligente de monitoreo y análisis de tráfico urbano para la Autoridad de Transporte Urbano (ATU).
 
-**URL**: https://lovable.dev/projects/5bc615b7-b414-401a-9a8f-6183afebd3d6
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![React](https://img.shields.io/badge/React-18.3-61DAFB?logo=react)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript)
+![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python)
 
-## How can I edit this code?
+## 📋 Características
 
-There are several ways of editing your application.
+- ✅ **Dashboard en Tiempo Real** - Monitoreo continuo del tráfico urbano
+- 📊 **Análisis de KPIs** - Ocupación UCP, congestión, tiempos de viaje
+- 🗺️ **Mapas Interactivos** - Visualización de segmentos viales con Folium
+- 📈 **Gráficos Dinámicos** - Análisis de tráfico por intervalos
+- 🚨 **Sistema de Alertas** - Notificaciones de incidentes y congestión
+- 📱 **Diseño Responsive** - Optimizado para móviles, tablets y desktops
+- 🔄 **Actualización Automática** - Sincronización cada 10 segundos
 
-**Use Lovable**
+## 🛠️ Tecnologías
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/5bc615b7-b414-401a-9a8f-6183afebd3d6) and start prompting.
+### Frontend
+- **React 18.3** + **TypeScript 5.8**
+- **Vite** - Build tool ultrarrápido
+- **Tailwind CSS** - Estilos utilitarios
+- **shadcn/ui** - Componentes UI
+- **React Router** - Navegación
+- **Recharts** - Gráficos
+- **TanStack Query** - Gestión de estado
 
-Changes made via Lovable will be committed automatically to this repo.
+### Backend
+- **Python 3.11** + **Flask 3.0**
+- **Pandas** - Análisis de datos
+- **Folium** - Mapas interactivos
+- **OpenPyXL** - Lectura de Excel
 
-**Use your preferred IDE**
+## 🚀 Inicio Rápido
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Prerrequisitos
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- Node.js 18+ ([Descargar](https://nodejs.org/))
+- Python 3.11+ ([Descargar](https://www.python.org/))
+- npm o yarn
 
-Follow these steps:
+### Instalación Local
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+1. **Clonar el repositorio**
+```bash
+git clone https://github.com/RafaelCly/atu-traffic-pulse.git
+cd atu-traffic-pulse
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+2. **Instalar dependencias del Frontend**
+```bash
+npm install
+```
 
-# Step 3: Install the necessary dependencies.
-npm i
+3. **Instalar dependencias del Backend**
+```bash
+pip install -r requirements.txt
+```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+4. **Iniciar el servidor de desarrollo**
+
+Terminal 1 (Frontend):
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Terminal 2 (Backend):
+```bash
+cd src/Mapas
+python app.py
+```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+5. **Abrir en el navegador**
+```
+http://localhost:8080
+```
 
-**Use GitHub Codespaces**
+## 📦 Despliegue en Render
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Para desplegar este proyecto en Render, sigue la guía completa en:
 
-## What technologies are used for this project?
+👉 **[DEPLOYMENT.md](./DEPLOYMENT.md)** 👈
 
-This project is built with:
+### Resumen rápido:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+1. **Push a GitHub**
+```bash
+git add .
+git commit -m "Preparado para Render"
+git push origin main
+```
 
-## How can I deploy this project?
+2. **Crear servicios en Render**
+   - Frontend: Node.js Web Service
+   - Backend: Python Web Service
 
-Simply open [Lovable](https://lovable.dev/projects/5bc615b7-b414-401a-9a8f-6183afebd3d6) and click on Share -> Publish.
+3. **Configurar variables de entorno**
+   - Ver detalles en `DEPLOYMENT.md`
 
-## Can I connect a custom domain to my Lovable project?
+4. **Deploy automático** ✨
 
-Yes, you can!
+URLs de ejemplo:
+- Frontend: `https://atu-traffic-pulse-frontend.onrender.com`
+- Backend: `https://atu-traffic-pulse-backend.onrender.com`
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## 📁 Estructura del Proyecto
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+```
+atu-traffic-pulse/
+├── src/
+│   ├── components/       # Componentes React
+│   │   ├── ui/          # Componentes shadcn/ui
+│   │   ├── AlertsPanel.tsx
+│   │   ├── Dashboard.tsx
+│   │   ├── KPICard.tsx
+│   │   ├── MetricsChart.tsx
+│   │   └── TrafficMap.tsx
+│   ├── pages/           # Páginas de la aplicación
+│   │   ├── Dashboard.tsx
+│   │   ├── Login.tsx
+│   │   └── NotFound.tsx
+│   ├── services/        # Servicios API
+│   │   └── trafficService.ts
+│   ├── Mapas/          # Backend Python
+│   │   ├── app.py      # Servidor Flask
+│   │   ├── templates/  # Templates HTML
+│   │   └── cache/      # Cache de mapas
+│   └── hooks/          # Custom React hooks
+├── public/             # Archivos estáticos
+├── DEPLOYMENT.md       # Guía de despliegue
+├── requirements.txt    # Dependencias Python
+├── package.json        # Dependencias Node.js
+├── vite.config.ts      # Configuración Vite
+└── tailwind.config.ts  # Configuración Tailwind
+```
+
+## 🎨 Scripts Disponibles
+
+```bash
+# Desarrollo
+npm run dev              # Inicia servidor de desarrollo
+
+# Producción
+npm run build           # Build para producción
+npm run preview         # Preview del build
+
+# Python Backend
+python src/Mapas/app.py # Inicia servidor Flask
+
+# Linting
+npm run lint            # Ejecuta ESLint
+```
+
+## 🔧 Configuración
+
+### Variables de Entorno
+
+Crea un archivo `.env.production` basado en `.env.example`:
+
+```env
+VITE_API_URL=https://tu-backend.onrender.com
+```
+
+### Backend Flask
+
+El backend se configura automáticamente para leer:
+- `src/Mapas/data_transito.xlsx` - Datos de tráfico
+
+## 📊 Características del Dashboard
+
+### KPIs Principales
+- **% Ocupación UCP** - Nivel de ocupación de unidades de coche patrón
+- **% Congestión** - Porcentaje de congestión en la red vial
+- **Tiempo Medio de Viaje** - Promedio de tiempos de viaje
+
+### Vistas
+- **Vista General** - Gráficos y métricas
+- **Mapa** - Visualización geográfica del tráfico
+- **Alertas** - Sistema de notificaciones
+
+### Funcionalidades
+- Actualización automática cada 10 segundos
+- Filtros por intervalo y segmento
+- Exportación de datos
+- Modo responsive para móviles
+
+## 🤝 Contribuir
+
+Las contribuciones son bienvenidas. Por favor:
+
+1. Fork el proyecto
+2. Crea una rama (`git checkout -b feature/AmazingFeature`)
+3. Commit tus cambios (`git commit -m 'Add AmazingFeature'`)
+4. Push a la rama (`git push origin feature/AmazingFeature`)
+5. Abre un Pull Request
+
+## 📝 Licencia
+
+Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para más detalles.
+
+## 👥 Autores
+
+- **Rafael Cly** - *Desarrollo Inicial* - [RafaelCly](https://github.com/RafaelCly)
+
+## 🙏 Agradecimientos
+
+- Autoridad de Transporte Urbano (ATU)
+- shadcn/ui por los componentes
+- Vercel por Vite y las herramientas de desarrollo
+
+---
+
+**Project URL**: https://lovable.dev/projects/5bc615b7-b414-401a-9a8f-6183afebd3d6
+
+Desarrollado con ❤️ para ATU
+
