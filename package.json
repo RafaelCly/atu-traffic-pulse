@@ -9,7 +9,8 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start": "vite preview --host 0.0.0.0 --port $PORT"
+    "start": "vite preview --host 0.0.0.0 --port $PORT",
+    "render-build": "npm install && npm run build"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
