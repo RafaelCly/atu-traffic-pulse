@@ -1,161 +1,175 @@
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, Camera, AlertTriangle, Navigation } from "lucide-react";
+import { RefreshCw, ExternalLink, AlertTriangle } from "lucide-react";
 
 const TrafficMap = () => {
-  const [selectedZone, setSelectedZone] = useState<string | null>(null);
-  const [mapData, setMapData] = useState({
-    zones: [
-      { id: "zona-1", name: "Centro Histórico", congestion: 85, incidents: 2, cameras: 12, x: 25, y: 30 },
-      { id: "zona-2", name: "Miraflores", congestion: 65, incidents: 1, cameras: 8, x: 45, y: 60 },
-      { id: "zona-3", name: "San Isidro", congestion: 45, incidents: 0, cameras: 10, x: 35, y: 50 },
-      { id: "zona-4", name: "Av. Javier Prado", congestion: 92, incidents: 3, cameras: 15, x: 60, y: 25 },
-      { id: "zona-5", name: "Callao", congestion: 30, incidents: 0, cameras: 6, x: 15, y: 40 },
-      { id: "zona-6", name: "La Molina", congestion: 55, incidents: 1, cameras: 9, x: 75, y: 70 },
-    ]
-  });
+  const [mapStatus, setMapStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
 
-  // Simulate real-time updates
+  // Verificar si el servidor Python está corriendo
   useEffect(() => {
-    const interval = setInterval(() => {
-      setMapData(prev => ({
-        ...prev,
-        zones: prev.zones.map(zone => ({
-          ...zone,
-          congestion: Math.max(20, Math.min(100, zone.congestion + (Math.random() - 0.5) * 10))
-        }))
-      }));
-    }, 5000);
+    const checkMapServer = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/debug');
+        if (response.ok) {
+          setMapStatus('ready');
+        } else {
+          setMapStatus('error');
+        }
+      } catch (error) {
+        console.error('Servidor de mapa no disponible:', error);
+        setMapStatus('error');
+      }
+    };
 
+    checkMapServer();
+    
+    // Verificar cada 30 segundos
+    const interval = setInterval(checkMapServer, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  const getCongestionColor = (level: number) => {
-    if (level >= 80) return "bg-destructive";
-    if (level >= 60) return "bg-warning";
-    if (level >= 40) return "bg-yellow-500";
-    return "bg-success";
+  // Actualizar timestamp cada 10 segundos
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLastUpdate(new Date());
+    }, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleRefresh = () => {
+    setLastUpdate(new Date());
+    // Recargar el iframe
+    const iframe = document.getElementById('python-map') as HTMLIFrameElement;
+    if (iframe) {
+      const currentSrc = iframe.src;
+      iframe.src = '';
+      setTimeout(() => {
+        iframe.src = currentSrc;
+      }, 100);
+    }
   };
 
-  const getCongestionLabel = (level: number) => {
-    if (level >= 80) return "Crítico";
-    if (level >= 60) return "Alto";
-    if (level >= 40) return "Moderado";
-    return "Fluido";
+  const openMapInNewTab = () => {
+    window.open('http://localhost:5000', '_blank');
   };
 
-  return (
-    <div className="h-full w-full bg-gradient-to-br from-slate-50 to-slate-100 relative overflow-hidden rounded-lg">
-      {/* Map Background - Simulated city layout */}
-      <div className="absolute inset-0 p-8">
-        {/* Streets/Roads - Simplified grid */}
-        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-          {/* Horizontal streets */}
-          <line x1="0" y1="20" x2="100" y2="20" stroke="#cbd5e1" strokeWidth="0.5" />
-          <line x1="0" y1="40" x2="100" y2="40" stroke="#cbd5e1" strokeWidth="0.5" />
-          <line x1="0" y1="60" x2="100" y2="60" stroke="#cbd5e1" strokeWidth="0.5" />
-          <line x1="0" y1="80" x2="100" y2="80" stroke="#cbd5e1" strokeWidth="0.5" />
-          
-          {/* Vertical streets */}
-          <line x1="20" y1="0" x2="20" y2="100" stroke="#cbd5e1" strokeWidth="0.5" />
-          <line x1="40" y1="0" x2="40" y2="100" stroke="#cbd5e1" strokeWidth="0.5" />
-          <line x1="60" y1="0" x2="60" y2="100" stroke="#cbd5e1" strokeWidth="0.5" />
-          <line x1="80" y1="0" x2="80" y2="100" stroke="#cbd5e1" strokeWidth="0.5" />
-          
-          {/* Major highways */}
-          <line x1="0" y1="25" x2="100" y2="25" stroke="#94a3b8" strokeWidth="1" />
-          <line x1="50" y1="0" x2="50" y2="100" stroke="#94a3b8" strokeWidth="1" />
-        </svg>
-
-        {/* Traffic Zones */}
-        {mapData.zones.map((zone) => (
-          <div
-            key={zone.id}
-            className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-all duration-200 hover:scale-110"
-            style={{ left: `${zone.x}%`, top: `${zone.y}%` }}
-            onClick={() => setSelectedZone(selectedZone === zone.id ? null : zone.id)}
+  if (mapStatus === 'error') {
+    return (
+      <div className="h-full w-full bg-gradient-to-br from-slate-50 to-slate-100 relative overflow-hidden rounded-lg flex items-center justify-center">
+        <div className="text-center p-8">
+          <AlertTriangle className="h-16 w-16 text-warning mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-foreground mb-2">
+            Mapa de Tráfico No Disponible
+          </h3>
+          <p className="text-muted-foreground mb-4">
+            El servidor del mapa Python no está ejecutándose.
+          </p>
+          <div className="space-y-2 text-sm text-muted-foreground">
+            <p>Para iniciar el mapa:</p>
+            <code className="block bg-muted p-2 rounded text-xs">
+              cd src/Mapas && python app.py
+            </code>
+          </div>
+          <Button 
+            onClick={() => setMapStatus('loading')} 
+            className="mt-4"
+            variant="outline"
           >
-            {/* Zone indicator */}
-            <div className={`w-6 h-6 rounded-full ${getCongestionColor(zone.congestion)} shadow-lg animate-pulse relative`}>
-              {zone.incidents > 0 && (
-                <AlertTriangle className="absolute -top-1 -right-1 h-3 w-3 text-destructive bg-background rounded-full p-0.5" />
-              )}
-            </div>
-
-            {/* Zone label */}
-            <div className="absolute top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
-              <Badge variant="outline" className="text-xs bg-background/90 backdrop-blur-sm">
-                {zone.name}
-              </Badge>
-            </div>
-
-            {/* Zone details popup */}
-            {selectedZone === zone.id && (
-              <div className="absolute top-10 left-1/2 transform -translate-x-1/2 bg-card border border-border rounded-lg shadow-xl p-4 min-w-[200px] z-10">
-                <h4 className="font-semibold mb-2 flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-primary" />
-                  {zone.name}
-                </h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Congestión:</span>
-                    <Badge variant="outline" className={getCongestionColor(zone.congestion).replace('bg-', 'text-')}>
-                      {Math.round(zone.congestion)}% - {getCongestionLabel(zone.congestion)}
-                    </Badge>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Incidentes:</span>
-                    <span className="font-medium">{zone.incidents}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Cámaras:</span>
-                    <span className="font-medium flex items-center gap-1">
-                      <Camera className="h-3 w-3" />
-                      {zone.cameras}
-                    </span>
-                  </div>
-                </div>
-                <Button size="sm" variant="outline" className="w-full mt-3">
-                  <Navigation className="h-3 w-3 mr-1" />
-                  Ver Detalles
-                </Button>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Map Legend */}
-      <div className="absolute bottom-4 left-4 bg-card/90 backdrop-blur-sm border border-border rounded-lg p-3 space-y-2">
-        <h5 className="font-semibold text-sm mb-2">Nivel de Congestión</h5>
-        <div className="space-y-1 text-xs">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-success"></div>
-            <span>Fluido (0-39%)</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-            <span>Moderado (40-59%)</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-warning"></div>
-            <span>Alto (60-79%)</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-destructive"></div>
-            <span>Crítico (80-100%)</span>
-          </div>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Reintentar
+          </Button>
         </div>
       </div>
+    );
+  }
 
-      {/* Real-time indicator */}
-      <div className="absolute top-4 right-4">
+  if (mapStatus === 'loading') {
+    return (
+      <div className="h-full w-full bg-gradient-to-br from-slate-50 to-slate-100 relative overflow-hidden rounded-lg flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Cargando mapa de tráfico...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full w-full relative overflow-hidden rounded-lg">
+      {/* Controles del mapa */}
+      <div className="absolute top-4 right-4 z-10 flex gap-2">
         <Badge variant="outline" className="bg-card/90 backdrop-blur-sm border-success">
           <div className="w-2 h-2 bg-success rounded-full mr-2 animate-pulse" />
           Tiempo Real
         </Badge>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={handleRefresh}
+          className="bg-card/90 backdrop-blur-sm"
+        >
+          <RefreshCw className="h-3 w-3 mr-1" />
+          Actualizar
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={openMapInNewTab}
+          className="bg-card/90 backdrop-blur-sm"
+        >
+          <ExternalLink className="h-3 w-3 mr-1" />
+          Abrir
+        </Button>
       </div>
+
+      {/* Información de última actualización */}
+      <div className="absolute bottom-4 left-4 z-10">
+        <Badge variant="outline" className="bg-card/90 backdrop-blur-sm">
+          Última actualización: {lastUpdate.toLocaleTimeString()}
+        </Badge>
+      </div>
+
+      {/* Iframe del mapa Python */}
+      <iframe
+        id="python-map"
+        src="http://localhost:5000"
+        className="w-full h-full border-0"
+        title="Mapa de Tráfico en Tiempo Real"
+        loading="lazy"
+        style={{
+          filter: 'none'
+        }}
+      />
+      
+      {/* Estilos para ocultar elementos del intervalo en el mapa */}
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          /* Ocultar panel de intervalo de tiempo en el iframe */
+          .status-panel {
+            display: none !important;
+          }
+          
+          /* Ocultar elementos que contengan información de tiempo/intervalo */
+          [class*="status"] {
+            display: none !important;
+          }
+          
+          [id*="interval"] {
+            display: none !important;
+          }
+          
+          [id*="simulation"] {
+            display: none !important;
+          }
+          
+          /* Específicamente para el iframe del mapa */
+          #python-map .status-panel {
+            display: none !important;
+          }
+        `
+      }} />
     </div>
   );
 };

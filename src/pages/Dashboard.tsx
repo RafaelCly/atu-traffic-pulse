@@ -7,36 +7,37 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Car, 
-  AlertTriangle, 
-  Activity, 
-  Users, 
   MapPin, 
   Clock,
   TrendingUp,
-  TrendingDown,
   LogOut,
   Bell,
   BarChart3,
-  Settings,
-  Monitor,
-  Zap,
-  Camera,
-  Navigation
+  Camera
 } from "lucide-react";
 import TrafficMap from "@/components/TrafficMap";
 import KPICard from "@/components/KPICard";
 import AlertsPanel from "@/components/AlertsPanel";
 import MetricsChart from "@/components/MetricsChart";
-import DecisionInsights from "@/components/DecisionInsights";
+import IntervalDisplay from "@/components/IntervalDisplay";
+import { trafficService, TrafficKPIs } from "@/services/trafficService";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [kpis, setKpis] = useState<TrafficKPIs>({
+    overallOccupancyPercentage: 0,
+    congestionPercentage: 0,
+    redSegmentsCount: 0,
+    totalSegmentsCount: 0,
+    averageTravelTime: 0
+  });
+  const [isServerConnected, setIsServerConnected] = useState(false);
 
   useEffect(() => {
-    const isAuthenticated = localStorage.getItem("atu-authenticated");
-    const userData = localStorage.getItem("atu-user");
+    const isAuthenticated = localStorage.getItem("theunianalytics-authenticated");
+    const userData = localStorage.getItem("theunianalytics-user");
     
     if (!isAuthenticated) {
       navigate("/");
@@ -55,20 +56,50 @@ const Dashboard = () => {
     return () => clearInterval(timer);
   }, [navigate]);
 
+  // Cargar KPIs reales del servicio de tráfico
+  useEffect(() => {
+    const loadKPIs = async () => {
+      try {
+        console.log('Dashboard: Cargando KPIs...');
+        const serverStatus = await trafficService.checkServerStatus();
+        console.log('Dashboard: Estado del servidor:', serverStatus);
+        setIsServerConnected(serverStatus);
+        
+        const realKPIs = await trafficService.getKPIs();
+        if (realKPIs) {
+          console.log('Dashboard: KPIs obtenidos:', realKPIs);
+          setKpis(realKPIs);
+        }
+      } catch (error) {
+        console.error('Dashboard: Error loading KPIs:', error);
+        setIsServerConnected(false);
+      }
+    };
+
+    // Cargar KPIs inicialmente
+    loadKPIs();
+    
+    // Actualizar KPIs cada 10 segundos
+    const kpiInterval = setInterval(() => {
+      console.log('Dashboard: Actualizando KPIs automáticamente...');
+      loadKPIs();
+    }, 10000);
+    
+    return () => {
+      console.log('Dashboard: Limpiando intervalo de KPIs');
+      clearInterval(kpiInterval);
+    };
+  }, []);
+
   const handleLogout = () => {
-    localStorage.removeItem("atu-authenticated");
-    localStorage.removeItem("atu-user");
+    localStorage.removeItem("theunianalytics-authenticated");
+    localStorage.removeItem("theunianalytics-user");
     navigate("/");
   };
 
-  // Mock real-time data
+  // Mock real-time data para activeCameras
   const [trafficData] = useState({
-    totalVehicles: 15420,
-    averageSpeed: 32.5,
-    incidents: 8,
-    congestionLevel: 65,
     activeCameras: 124,
-    alerts: 3
   });
 
   if (!user) return null;
@@ -85,7 +116,7 @@ const Dashboard = () => {
               </div>
               <div>
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
-                  ATU Centro de Control
+                  TheUNIAnalytics Centro de Control
                 </h1>
                 <p className="text-sm text-muted-foreground font-medium">Sistema de Monitoreo con Cámaras y GPS</p>
               </div>
@@ -93,19 +124,23 @@ const Dashboard = () => {
             
             <div className="flex items-center space-x-6">
               {/* Status Indicators */}
+              {/* Status Indicators */}
               <div className="hidden sm:flex items-center space-x-4">
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-success/10 rounded-full">
-                  <div className="w-2 h-2 bg-success rounded-full animate-pulse" />
-                  <span className="text-xs font-medium text-success">Sistema Activo</span>
+                  <div className={`w-2 h-2 rounded-full mr-2 animate-pulse ${isServerConnected ? 'bg-success' : 'bg-warning'}`} />
+                  <span className={`text-xs font-medium ${isServerConnected ? 'text-success' : 'text-warning'}`}>
+                    {isServerConnected ? 'Sistema Activo' : 'Modo Simulación'}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-full">
                   <Camera className="h-3 w-3 text-primary" />
                   <span className="text-xs font-medium text-primary">{trafficData.activeCameras} Cámaras</span>
                 </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-warning/10 rounded-full">
-                  <Navigation className="h-3 w-3 text-warning" />
-                  <span className="text-xs font-medium text-warning">GPS Activo</span>
-                </div>
+                {isServerConnected && (
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-success/10 rounded-full">
+                    <span className="text-xs font-medium text-success">Excel Conectado</span>
+                  </div>
+                )}
               </div>
               
               <div className="text-right hidden md:block">
@@ -130,61 +165,40 @@ const Dashboard = () => {
       </header>
 
       <div className="max-w-7xl mx-auto p-6 space-y-8">
-        {/* Enhanced KPIs with additional metrics */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-4">
+        {/* Intervalo Actual - Prominente */}
+        <IntervalDisplay />
+
+        {/* KPIs principales - Conectados con datos reales */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <KPICard
-            title="Vehículos Activos"
-            value={trafficData.totalVehicles.toLocaleString()}
+            title="% Ocupación UCP"
+            value={`${Math.round(kpis.overallOccupancyPercentage)}%`}
             icon={Car}
             trend="up"
             trendValue="+5.2%"
             color="primary"
           />
           <KPICard
-            title="Velocidad Media"
-            value={`${trafficData.averageSpeed} km/h`}
-            icon={Activity}
-            trend="down"
-            trendValue="-2.1%"
-            color="warning"
-          />
-          <KPICard
-            title="Incidencias"
-            value={trafficData.incidents.toString()}
-            icon={AlertTriangle}
-            trend="up"
-            trendValue="+12%"
-            color="destructive"
-          />
-          <KPICard
-            title="Congestión"
-            value={`${trafficData.congestionLevel}%`}
+            title="% Congestión"
+            value={`${Math.round(kpis.congestionPercentage)}%`}
             icon={TrendingUp}
             trend="stable"
             trendValue="0%"
             color="accent"
           />
           <KPICard
-            title="Tiempo Ahorro"
-            value="23 min"
+            title="Tiempo Medio de Viaje"
+            value={`${kpis.averageTravelTime} min`}
             icon={Clock}
-            trend="up"
-            trendValue="+8%"
-            color="success"
-          />
-          <KPICard
-            title="Eficiencia"
-            value="87%"
-            icon={Zap}
-            trend="up"
-            trendValue="+3%"
-            color="primary"
+            trend="down"
+            trendValue="-2.1%"
+            color="warning"
           />
         </div>
 
         {/* Main Dashboard with Tabs for better organization */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:grid-cols-3">
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               <span className="hidden sm:inline">Vista General</span>
@@ -197,46 +211,11 @@ const Dashboard = () => {
               <Bell className="h-4 w-4" />
               <span className="hidden sm:inline">Alertas</span>
             </TabsTrigger>
-            <TabsTrigger value="analytics" className="flex items-center gap-2">
-              <Zap className="h-4 w-4" />
-              <span className="hidden sm:inline">Análisis</span>
-            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
-            {/* Analytics Section - Power BI Style */}
+            {/* Solo mostrar gráficos de métricas */}
             <MetricsChart />
-            
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-              {/* Enhanced Traffic Map */}
-              <div className="xl:col-span-2">
-                <Card className="overflow-hidden border-0 shadow-xl bg-gradient-to-br from-card to-card/80">
-                  <CardHeader className="pb-4 bg-gradient-to-r from-primary/5 to-transparent">
-                    <CardTitle className="flex items-center gap-3">
-                      <div className="p-2 bg-primary/10 rounded-lg">
-                        <MapPin className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold">Mapa Inteligente de Tráfico</h3>
-                        <p className="text-sm text-muted-foreground">Vista en tiempo real con IA predictiva</p>
-                      </div>
-                      <Badge variant="outline" className="ml-auto bg-success/10 border-success/20">
-                        <div className="w-2 h-2 bg-success rounded-full mr-2 animate-pulse" />
-                        IA Activa
-                      </Badge>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-0 h-[520px]">
-                    <TrafficMap />
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Decision Insights Panel */}
-              <div className="space-y-6">
-                <DecisionInsights />
-              </div>
-            </div>
           </TabsContent>
 
           <TabsContent value="map">
@@ -265,65 +244,6 @@ const Dashboard = () => {
                 <AlertsPanel />
               </CardContent>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="analytics">
-            <div className="space-y-6">
-              {/* Advanced Analytics */}
-              <MetricsChart />
-              
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card className="overflow-hidden border-0 shadow-xl bg-gradient-to-br from-card to-card/80">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-3">
-                      <BarChart3 className="h-6 w-6 text-primary" />
-                      Análisis Predictivo
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="p-4 bg-primary/5 rounded-lg">
-                        <h4 className="font-semibold text-primary">Predicción Próximas 2 Horas</h4>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Incremento del 35% en Centro Histórico. Recomendamos activar Plan de Contingencia B.
-                        </p>
-                      </div>
-                      <div className="p-4 bg-warning/5 rounded-lg">
-                        <h4 className="font-semibold text-warning">Alerta Temprana</h4>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Evento masivo detectado en Miraflores. Preparar desvíos alternativos.
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card className="overflow-hidden border-0 shadow-xl bg-gradient-to-br from-card to-card/80">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-3">
-                      <TrendingUp className="h-6 w-6 text-success" />
-                      ROI de Optimizaciones
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center p-3 bg-success/10 rounded-lg">
-                        <span className="font-medium">Ahorro Combustible</span>
-                        <span className="font-bold text-success">S/. 245,000</span>
-                      </div>
-                      <div className="flex justify-between items-center p-3 bg-primary/10 rounded-lg">
-                        <span className="font-medium">Tiempo Ahorrado</span>
-                        <span className="font-bold text-primary">1,250 hrs</span>
-                      </div>
-                      <div className="flex justify-between items-center p-3 bg-warning/10 rounded-lg">
-                        <span className="font-medium">Reducción CO2</span>
-                        <span className="font-bold text-warning">-18%</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
           </TabsContent>
         </Tabs>
       </div>

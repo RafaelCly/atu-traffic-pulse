@@ -20,8 +20,8 @@ const Login = () => {
     // Simulate login
     setTimeout(() => {
       if (email && password) {
-        localStorage.setItem("atu-authenticated", "true");
-        localStorage.setItem("atu-user", JSON.stringify({ email, name: "Operador ATU" }));
+        localStorage.setItem("theunianalytics-authenticated", "true");
+        localStorage.setItem("theunianalytics-user", JSON.stringify({ email, name: "Operador TheUNIAnalytics" }));
         toast({
           title: "Acceso autorizado",
           description: "Bienvenido al sistema de monitoreo de tráfico",
@@ -45,7 +45,7 @@ const Login = () => {
           <div className="mx-auto w-16 h-16 bg-primary rounded-full flex items-center justify-center mb-4 shadow-lg">
             <Shield className="h-8 w-8 text-primary-foreground" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">ATU - Control de Tráfico</h1>
+          <h1 className="text-3xl font-bold text-foreground mb-2">TheUNIAnalytics - Control de Tráfico</h1>
           <p className="text-muted-foreground">Sistema de Monitoreo Inteligente</p>
         </div>
 
@@ -63,7 +63,7 @@ const Login = () => {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="operador@atu.gob.pe"
+                  placeholder="operador@theunianalytics.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="h-11"

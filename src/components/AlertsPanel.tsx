@@ -1,51 +1,67 @@
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Car, Construction, Clock, Eye, X } from "lucide-react";
+import { AlertTriangle, Car, Construction, Clock, Eye, X, Lightbulb, TrendingUp, Timer, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Alert {
   id: string;
-  type: "incident" | "congestion" | "maintenance";
+  type: "traffic_light" | "congestion_critical" | "travel_time_exceeded" | "incident";
   priority: "high" | "medium" | "low";
   title: string;
   location: string;
   time: string;
   description: string;
   status: "active" | "resolved";
+  value?: string; // Para mostrar valores específicos como porcentajes o tiempos
+  incidentType?: string; // Para especificar el tipo de incidente
 }
 
 const AlertsPanel = () => {
   const [alerts, setAlerts] = useState<Alert[]>([
     {
       id: "1",
-      type: "incident",
+      type: "traffic_light",
       priority: "high",
-      title: "Accidente de Tránsito",
-      location: "Av. Javier Prado - Altura del Óvalo",
+      title: "Semáforo en Rojo Permanente",
+      location: "Av. Javier Prado - Cruce San Luis",
       time: "14:32",
-      description: "Colisión múltiple, 2 carriles bloqueados",
-      status: "active"
+      description: "Se mantiene en rojo por 2 intervalos consecutivos",
+      status: "active",
+      value: "2 intervalos"
     },
     {
       id: "2",
-      type: "congestion",
-      priority: "medium",
-      title: "Congestión Severa",
+      type: "congestion_critical",
+      priority: "high",
+      title: "Congestión Crítica Detectada",
       location: "Centro Histórico - Jr. de la Unión",
       time: "14:15",
-      description: "Flujo vehicular reducido al 30%",
-      status: "active"
+      description: "Nivel de congestión ha superado el límite establecido",
+      status: "active",
+      value: "92%"
     },
     {
       id: "3",
-      type: "maintenance",
-      priority: "low",
-      title: "Mantenimiento Programado",
-      location: "Miraflores - Av. Larco",
+      type: "travel_time_exceeded",
+      priority: "medium",
+      title: "Tiempo de Viaje Excedido",
+      location: "Miraflores - Av. Larco (Tramo 3)",
       time: "13:45",
-      description: "Reparación semafórica en progreso",
-      status: "active"
+      description: "Tiempo promedio por tramo superado significativamente",
+      status: "active",
+      value: "+15 min"
+    },
+    {
+      id: "4",
+      type: "incident",
+      priority: "high",
+      title: "Accidente de Tránsito",
+      location: "Av. Arequipa - Altura del Óvalo",
+      time: "13:30",
+      description: "Colisión múltiple reportada por sistema automático",
+      status: "active",
+      incidentType: "Colisión múltiple"
     }
   ]);
 
@@ -53,15 +69,44 @@ const AlertsPanel = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       if (Math.random() > 0.85) { // 15% chance every 10 seconds
+        const alertTypes = ["traffic_light", "congestion_critical", "travel_time_exceeded", "incident"] as const;
+        const alertType = alertTypes[Math.floor(Math.random() * alertTypes.length)];
+        
+        const alertTemplates = {
+          traffic_light: {
+            title: "Falla en Semáforo",
+            description: "Semáforo permanece en rojo por intervalos prolongados",
+            value: "3 intervalos"
+          },
+          congestion_critical: {
+            title: "Congestión Crítica",
+            description: "Nivel de congestión supera el 90%",
+            value: `${90 + Math.floor(Math.random() * 10)}%`
+          },
+          travel_time_exceeded: {
+            title: "Tiempo de Viaje Excedido",
+            description: "Tiempo promedio por tramo superado",
+            value: `+${5 + Math.floor(Math.random() * 20)} min`
+          },
+          incident: {
+            title: "Incidente Reportado",
+            description: "Incidente detectado automáticamente",
+            incidentType: ["Accidente", "Vehículo averiado", "Obra no programada", "Manifestación"][Math.floor(Math.random() * 4)]
+          }
+        };
+        
+        const template = alertTemplates[alertType];
         const newAlert: Alert = {
           id: Date.now().toString(),
-          type: ["incident", "congestion", "maintenance"][Math.floor(Math.random() * 3)] as Alert["type"],
+          type: alertType,
           priority: ["high", "medium", "low"][Math.floor(Math.random() * 3)] as Alert["priority"],
-          title: "Nueva Incidencia Detectada",
+          title: template.title,
           location: "Zona Automatizada",
           time: new Date().toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" }),
-          description: "Anomalía detectada por sensores",
-          status: "active"
+          description: template.description,
+          status: "active",
+          ...('value' in template ? { value: template.value } : {}),
+          ...('incidentType' in template ? { incidentType: template.incidentType } : {})
         };
         
         setAlerts(prev => [newAlert, ...prev.slice(0, 4)]); // Keep only 5 alerts
@@ -73,12 +118,14 @@ const AlertsPanel = () => {
 
   const getAlertIcon = (type: Alert["type"]) => {
     switch (type) {
+      case "traffic_light":
+        return Lightbulb;
+      case "congestion_critical":
+        return TrendingUp;
+      case "travel_time_exceeded":
+        return Timer;
       case "incident":
         return AlertTriangle;
-      case "congestion":
-        return Car;
-      case "maintenance":
-        return Construction;
       default:
         return AlertTriangle;
     }
@@ -158,6 +205,26 @@ const AlertsPanel = () => {
                   {alert.time} - {alert.location}
                 </p>
                 <p className="text-xs text-foreground">{alert.description}</p>
+                
+                {/* Mostrar valor específico o tipo de incidente */}
+                {alert.value && (
+                  <div className="flex items-center gap-1 mt-1">
+                    <Badge variant="outline" className="text-xs bg-destructive/10 text-destructive border-destructive/20">
+                      {alert.type === "congestion_critical" ? "Nivel: " : 
+                       alert.type === "travel_time_exceeded" ? "Exceso: " :
+                       alert.type === "traffic_light" ? "Duración: " : "Valor: "}
+                      {alert.value}
+                    </Badge>
+                  </div>
+                )}
+                
+                {alert.incidentType && (
+                  <div className="flex items-center gap-1 mt-1">
+                    <Badge variant="outline" className="text-xs bg-warning/10 text-warning border-warning/20">
+                      Tipo: {alert.incidentType}
+                    </Badge>
+                  </div>
+                )}
               </div>
               
               <div className="flex gap-2 pt-2">
