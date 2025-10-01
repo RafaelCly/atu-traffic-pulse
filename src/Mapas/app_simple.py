@@ -2,6 +2,8 @@ from flask import Flask, jsonify, render_template
 from flask_cors import CORS
 import random
 import os
+import time
+import threading
 
 app = Flask(__name__)
 
@@ -34,7 +36,102 @@ INTERVALS = [
     '08:00 - 08:15', '08:15 - 08:30', '08:30 - 08:45', '08:45 - 09:00',
 ]
 
+# Estado global que cambia con el tiempo
 current_step = 0
+segment_states = {}
+
+# Coordenadas de los segmentos de Av. Pachacutec
+SEGMENT_COORDS = {
+    "1 - Av. Pachacutec VTM -> SJM": [
+        [-12.180248, -76.943505],
+        [-12.178283, -76.944721]
+    ],
+    "2 - Av. Pachacutec VTM -> SJM": [
+        [-12.178283, -76.944721],
+        [-12.175114, -76.946517]
+    ],
+    "3 - Av. Pachacutec VTM -> SJM": [
+        [-12.175114, -76.946517],
+        [-12.172546, -76.948311]
+    ],
+    "1 - Av. Pachacutec SJM -> VTM": [
+        [-12.172839, -76.948411],
+        [-12.175273, -76.946697]
+    ],
+    "2 - Av. Pachacutec SJM -> VTM": [
+        [-12.175273, -76.946697],
+        [-12.178550, -76.944770]
+    ],
+    "3 - Av. Pachacutec SJM -> VTM": [
+        [-12.178550, -76.944770],
+        [-12.180411, -76.943712]
+    ]
+}
+
+def initialize_segments():
+    """Inicializa los estados de los segmentos"""
+    global segment_states
+    for segment in SEGMENTS:
+        segment_states[segment] = {
+            'occupancy': random.uniform(60, 85),
+            'vehicles': {
+                'Auto': random.randint(20, 60),
+                'Taxi': random.randint(10, 30),
+                'Omnibus': random.randint(3, 10),
+                'Microbús': random.randint(5, 15),
+                'Camioneta rural': random.randint(8, 20),
+                'Moto lineal': random.randint(15, 35),
+                'Mototaxi': random.randint(10, 25),
+                'Bicicleta': random.randint(5, 15),
+                'Camión': random.randint(3, 12),
+                'Tráiler': random.randint(1, 5),
+                'Bus Interprovincial': random.randint(2, 8)
+            },
+            'ucp_density': random.uniform(80, 180)
+        }
+
+def update_simulation():
+    """Actualiza la simulación cada 10 segundos"""
+    global current_step
+    while True:
+        time.sleep(10)
+        current_step = (current_step + 1) % len(INTERVALS)
+        
+        # Actualizar estados de segmentos con variación realista
+        for segment in SEGMENTS:
+            # Variar ocupación basada en la hora
+            hour = int(INTERVALS[current_step].split(':')[0])
+            if 7 <= hour <= 9:  # Hora pico
+                base_occupancy = random.uniform(75, 95)
+            elif 10 <= hour <= 11:
+                base_occupancy = random.uniform(60, 75)
+            else:
+                base_occupancy = random.uniform(50, 70)
+            
+            segment_states[segment]['occupancy'] = base_occupancy
+            segment_states[segment]['ucp_density'] = random.uniform(
+                base_occupancy * 0.8, 
+                base_occupancy * 1.2
+            )
+            
+            # Actualizar vehículos
+            for vtype in segment_states[segment]['vehicles']:
+                multiplier = base_occupancy / 70  # Factor basado en ocupación
+                base = {
+                    'Auto': 40, 'Taxi': 20, 'Omnibus': 7, 'Microbús': 10,
+                    'Camioneta rural': 14, 'Moto lineal': 25, 'Mototaxi': 17,
+                    'Bicicleta': 10, 'Camión': 7, 'Tráiler': 3, 'Bus Interprovincial': 5
+                }
+                segment_states[segment]['vehicles'][vtype] = int(
+                    base.get(vtype, 10) * multiplier * random.uniform(0.8, 1.2)
+                )
+
+# Inicializar al arrancar
+initialize_segments()
+
+# Iniciar thread de simulación
+simulation_thread = threading.Thread(target=update_simulation, daemon=True)
+simulation_thread.start()
 
 @app.route('/')
 def index():
@@ -91,49 +188,79 @@ def status():
 
 @app.route('/api/kpis')
 def get_kpis():
+    # Calcular KPIs basados en estados actuales
+    total_occupancy = sum(seg['occupancy'] for seg in segment_states.values()) / len(segment_states)
+    red_count = sum(1 for seg in segment_states.values() if seg['occupancy'] > 80)
+    congestion = (red_count / len(segment_states)) * 100
+    
     return jsonify({
-        'overall_occupancy_percentage': random.uniform(65, 85),
-        'congestion_percentage': random.uniform(55, 75),
-        'red_segments_count': random.randint(1, 3),
-        'total_segments_count': 6
+        'overall_occupancy_percentage': round(total_occupancy, 2),
+        'congestion_percentage': round(congestion, 2),
+        'red_segments_count': red_count,
+        'total_segments_count': len(SEGMENTS)
     })
 
 @app.route('/api/traffic_data')
 def get_traffic_data():
     data = []
-    for segment in SEGMENTS:
-        occupancy = random.uniform(60, 95)
+    for segment_name, state in segment_states.items():
         data.append({
-            'segment_name': segment,
-            'direction': 'VMT→SJM' if 'VTM -> SJM' in segment else 'SJM→VMT',
-            'vehicle_counts': {
-                'Auto': random.randint(20, 60),
-                'Taxi': random.randint(10, 30),
-                'Omnibus': random.randint(3, 10),
-                'Microbús': random.randint(5, 15)
-            },
-            'ucp_density': random.uniform(80, 180),
-            'occupancy_percentage': occupancy,
-            'total_vehicles': random.randint(50, 120)
+            'segment_name': segment_name,
+            'direction': 'VMT→SJM' if 'VTM -> SJM' in segment_name else 'SJM→VMT',
+            'vehicle_counts': state['vehicles'],
+            'ucp_density': round(state['ucp_density'], 2),
+            'occupancy_percentage': round(state['occupancy'], 2),
+            'total_vehicles': sum(state['vehicles'].values())
         })
     return jsonify(data)
 
 @app.route('/api/road_data')
 def get_road_data():
-    # Retornar segmentos de ruta simplificados
-    return jsonify([])
+    """Retorna segmentos de ruta con colores basados en ocupación"""
+    roads = []
+    segment_id = 0
+    
+    for segment_name, state in segment_states.items():
+        occupancy = state['occupancy']
+        
+        # Determinar color basado en ocupación
+        if occupancy <= 50:
+            color = 'green'
+        elif occupancy <= 80:
+            color = 'yellow'
+        else:
+            color = 'red'
+        
+        roads.append({
+            'id': f'segment_{segment_id}',
+            'name': segment_name,
+            'coords': SEGMENT_COORDS.get(segment_name, []),
+            'color': color,
+            'length': 1000,  # Metros aproximados
+            'occupancy': round(occupancy, 2),
+            'vehicles': sum(state['vehicles'].values()),
+            'ucp': round(state['ucp_density'], 2)
+        })
+        segment_id += 1
+    
+    return jsonify(roads)
 
 @app.route('/api/debug')
 def debug_info():
+    sections_info = []
+    for segment_name, state in segment_states.items():
+        sections_info.append({
+            'name': segment_name,
+            'ucp': round(state['ucp_density'], 2),
+            'vehicles': sum(state['vehicles'].values())
+        })
+    
     return jsonify({
         'total_segments_in_polygon': 150,
-        'total_route_sections': 6,
+        'total_route_sections': len(SEGMENTS),
         'current_simulation_step': current_step,
         'current_interval': INTERVALS[current_step % len(INTERVALS)],
-        'sections_info': [
-            {'name': seg, 'ucp': random.uniform(80, 180), 'vehicles': random.randint(50, 120)}
-            for seg in SEGMENTS
-        ]
+        'sections_info': sections_info
     })
 
 @app.route('/api/current_interval')
@@ -166,17 +293,19 @@ def get_ucp_by_interval():
 def get_vehicles_by_interval():
     interval = INTERVALS[current_step % len(INTERVALS)]
     data = []
-    for segment in SEGMENTS:
+    
+    for segment_name, state in segment_states.items():
+        vehicles = state['vehicles']
         data.append({
-            'segment_id': segment,
-            'segment_name': segment,
-            'autos': random.randint(20, 60),
-            'buses': random.randint(3, 12),
-            'motos': random.randint(10, 30),
-            'camionetas': random.randint(5, 20),
-            'total_vehicles': random.randint(50, 120),
-            'ucp': random.uniform(80, 180),
-            'ocupacion': random.uniform(60, 95)
+            'segment_id': segment_name,
+            'segment_name': segment_name,
+            'autos': vehicles.get('Auto', 0) + vehicles.get('Taxi', 0),
+            'buses': vehicles.get('Omnibus', 0) + vehicles.get('Microbús', 0) + vehicles.get('Bus Interprovincial', 0),
+            'motos': vehicles.get('Moto lineal', 0) + vehicles.get('Mototaxi', 0) + vehicles.get('Bicicleta', 0),
+            'camionetas': vehicles.get('Camioneta rural', 0) + vehicles.get('Camión', 0) + vehicles.get('Tráiler', 0),
+            'total_vehicles': sum(vehicles.values()),
+            'ucp': round(state['ucp_density'], 2),
+            'ocupacion': round(state['occupancy'], 2)
         })
     return jsonify(data)
 
