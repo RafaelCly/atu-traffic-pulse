@@ -195,13 +195,24 @@ def load_traffic_data():
 def load_and_structure_data():
     global road_segments_data, sections
     
-    logging.info("1. Descargando la red de calles...")
+    logging.info("=" * 70)
+    logging.info("🔄 INICIANDO CARGA DE DATOS DEL MAPA...")
+    logging.info("=" * 70)
+    logging.info("1. Descargando la red de calles desde OpenStreetMap...")
+    logging.info("   (Esto puede tardar 1-2 minutos en la primera ejecución)")
+    
     try:
+        # Configurar cache de OSMnx
+        ox.settings.use_cache = True
+        ox.settings.log_console = True
+        
         graph = ox.graph_from_polygon(ROUTE_POLYGON, network_type='drive')
+        logging.info("✅ Red de calles descargada exitosamente")
     except Exception as e:
         logging.critical(f"❌ ERROR AL DESCARGAR: {e}")
         return
     
+    logging.info("2. Procesando edges del grafo...")
     edges_gdf = ox.graph_to_gdfs(graph, nodes=False, edges=True)
     for (u, v, key), edge_data in edges_gdf.iterrows():
         road_id = f"{u}_{v}_{key}"
@@ -212,8 +223,9 @@ def load_and_structure_data():
             'color': 'gray',
             'length': float(edge_data.get('length', 100))
         }
+    logging.info(f"✅ {len(road_segments_data)} segmentos de calles procesados")
     
-    logging.info(f"3. Encontrando nodos...")
+    logging.info("3. Encontrando nodos clave...")
     try:
         key_nodes_ida = ox.nearest_nodes(graph, 
             [p[1] for p in KEY_INTERSECTIONS_IDA], 
@@ -221,11 +233,12 @@ def load_and_structure_data():
         key_nodes_vuelta = ox.nearest_nodes(graph, 
             [p[1] for p in KEY_INTERSECTIONS_VUELTA], 
             [p[0] for p in KEY_INTERSECTIONS_VUELTA])
+        logging.info("✅ Nodos clave encontrados")
     except Exception as e:
         logging.critical(f"❌ ERROR al encontrar nodos: {e}")
         return
 
-    logging.info(f"4. Calculando las secciones...")
+    logging.info("4. Calculando las secciones de la ruta...")
     directions = {"VMT→SJM": key_nodes_ida, "SJM→VMT": key_nodes_vuelta}
 
     for dir_name, nodes_order in directions.items():
@@ -387,6 +400,11 @@ def update_traffic_periodically():
 @app.route('/')
 def map_page():
     return render_template('map.html')
+
+@app.route('/health')
+def health_check():
+    """Endpoint simple para verificar que el servidor está vivo"""
+    return jsonify({'status': 'ok', 'message': 'Server is running'}), 200
 
 @app.route('/api/road_data')
 def get_road_data():
