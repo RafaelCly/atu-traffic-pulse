@@ -506,6 +506,9 @@ def get_status():
 
 @app.route('/api/road_data')
 def get_road_data():
+    # Forzar recalcular antes de devolver datos para asegurar sincronización
+    recalculate_segment_states()
+    
     route_segments = [road for road in road_segments_data.values() if road['color'] != 'gray']
     
     # Log para debugging: contar colores
