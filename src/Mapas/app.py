@@ -5,10 +5,22 @@ import time
 import pandas as pd
 import osmnx as ox
 import os
+import json
+import pickle
 from shapely.geometry import Polygon
 import logging
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# Archivos de caché
+CACHE_DIR = 'cache'
+GRAPH_CACHE_FILE = os.path.join(CACHE_DIR, 'graph_cache.pkl')
+SEGMENTS_CACHE_FILE = os.path.join(CACHE_DIR, 'segments_cache.json')
+SECTIONS_CACHE_FILE = os.path.join(CACHE_DIR, 'sections_cache.json')
+
+# Crear directorio de caché si no existe
+if not os.path.exists(CACHE_DIR):
+    os.makedirs(CACHE_DIR)
 
 # Configurar Flask con carpeta estática para las imágenes
 app = Flask(__name__, static_folder='../imagenes', static_url_path='/static/imagenes')
@@ -19,7 +31,8 @@ CORS(app, resources={
         "origins": [
             "https://atu-traffic-pulse-frontend.onrender.com",
             "http://localhost:5173",
-            "http://localhost:8080"
+            "http://localhost:8080",
+            "http://localhost:4173"
         ],
         "methods": ["GET", "POST", "OPTIONS"],
         "allow_headers": ["Content-Type"]
@@ -192,11 +205,70 @@ def load_traffic_data():
         traffic_df = pd.DataFrame()
         time_intervals = []
 
+def save_cache():
+    """Guardar datos en caché"""
+    try:
+        logging.info("💾 Guardando datos en caché...")
+        
+        # Guardar segments
+        with open(SEGMENTS_CACHE_FILE, 'w') as f:
+            json.dump(road_segments_data, f)
+        
+        # Guardar sections (sin los sets que no son serializables)
+        sections_to_save = []
+        for section in sections:
+            section_copy = section.copy()
+            section_copy['edges'] = list(section_copy['edges'])  # Convertir set a list
+            sections_to_save.append(section_copy)
+        
+        with open(SECTIONS_CACHE_FILE, 'w') as f:
+            json.dump(sections_to_save, f)
+        
+        logging.info("✅ Caché guardado exitosamente")
+        return True
+    except Exception as e:
+        logging.error(f"❌ Error al guardar caché: {e}")
+        return False
+
+def load_from_cache():
+    """Cargar datos desde caché"""
+    global road_segments_data, sections
+    
+    try:
+        if not os.path.exists(SEGMENTS_CACHE_FILE) or not os.path.exists(SECTIONS_CACHE_FILE):
+            logging.info("⚠️ Archivos de caché no encontrados")
+            return False
+        
+        logging.info("📂 Cargando datos desde caché...")
+        
+        # Cargar segments
+        with open(SEGMENTS_CACHE_FILE, 'r') as f:
+            road_segments_data = json.load(f)
+        
+        # Cargar sections
+        with open(SECTIONS_CACHE_FILE, 'r') as f:
+            sections_loaded = json.load(f)
+            sections = []
+            for section in sections_loaded:
+                section['edges'] = set(section['edges'])  # Convertir list de vuelta a set
+                sections.append(section)
+        
+        logging.info(f"✅ Caché cargado: {len(road_segments_data)} segmentos, {len(sections)} secciones")
+        return True
+    except Exception as e:
+        logging.error(f"❌ Error al cargar caché: {e}")
+        return False
+
 def load_and_structure_data():
     global road_segments_data, sections
     
+    # Primero intentar cargar desde caché
+    if load_from_cache():
+        logging.info("✅ Datos cargados desde caché - Inicio rápido")
+        return
+    
     logging.info("=" * 70)
-    logging.info("🔄 INICIANDO CARGA DE DATOS DEL MAPA...")
+    logging.info("🔄 INICIANDO CARGA DE DATOS DEL MAPA (sin caché)...")
     logging.info("=" * 70)
     logging.info("1. Descargando la red de calles desde OpenStreetMap...")
     logging.info("   (Esto puede tardar 1-2 minutos en la primera ejecución)")
@@ -210,6 +282,7 @@ def load_and_structure_data():
         logging.info("✅ Red de calles descargada exitosamente")
     except Exception as e:
         logging.critical(f"❌ ERROR AL DESCARGAR: {e}")
+        logging.critical("💡 SUGERENCIA: Si estás en producción, asegúrate de tener los archivos de caché")
         return
     
     logging.info("2. Procesando edges del grafo...")

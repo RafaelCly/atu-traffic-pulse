@@ -11,6 +11,8 @@ services:
         value: 18.18.0
       - key: NODE_ENV
         value: production
+      - key: VITE_API_URL
+        value: https://atu-traffic-pulse-backend.onrender.com
     healthCheckPath: /
 
   # Backend - Python Flask (Mapas)
@@ -18,8 +20,9 @@ services:
     name: atu-traffic-pulse-backend
     runtime: python
     plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: python src/Mapas/app.py
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    # Usar gunicorn para producción (más estable que python app.py)
+    startCommand: cd src/Mapas && gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 120 --log-level info app:app
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
@@ -27,4 +30,4 @@ services:
         value: production
       - key: PORT
         value: 5000
-    healthCheckPath: /api/debug
+    healthCheckPath: /health

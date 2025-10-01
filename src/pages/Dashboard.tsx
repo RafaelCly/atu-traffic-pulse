@@ -60,18 +60,26 @@ const Dashboard = () => {
   useEffect(() => {
     const loadKPIs = async () => {
       try {
-        console.log('Dashboard: Cargando KPIs...');
+        console.log('Dashboard: Verificando conexión con el servidor...');
         const serverStatus = await trafficService.checkServerStatus();
         console.log('Dashboard: Estado del servidor:', serverStatus);
         setIsServerConnected(serverStatus);
         
+        if (!serverStatus) {
+          console.warn('Dashboard: Servidor no conectado, esperando...');
+          return;
+        }
+        
+        console.log('Dashboard: Cargando KPIs...');
         const realKPIs = await trafficService.getKPIs();
         if (realKPIs) {
-          console.log('Dashboard: KPIs obtenidos:', realKPIs);
+          console.log('Dashboard: KPIs obtenidos exitosamente:', realKPIs);
           setKpis(realKPIs);
+        } else {
+          console.warn('Dashboard: No se pudieron obtener KPIs');
         }
       } catch (error) {
-        console.error('Dashboard: Error loading KPIs:', error);
+        console.error('Dashboard: Error al cargar KPIs:', error);
         setIsServerConnected(false);
       }
     };
@@ -79,11 +87,11 @@ const Dashboard = () => {
     // Cargar KPIs inicialmente
     loadKPIs();
     
-    // Actualizar KPIs cada 10 segundos
+    // Actualizar KPIs cada 15 segundos (más tiempo para dar chance al backend)
     const kpiInterval = setInterval(() => {
       console.log('Dashboard: Actualizando KPIs automáticamente...');
       loadKPIs();
-    }, 10000);
+    }, 15000);
     
     return () => {
       console.log('Dashboard: Limpiando intervalo de KPIs');

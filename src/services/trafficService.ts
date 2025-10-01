@@ -66,55 +66,92 @@ const PYTHON_MAP_BASE_URL = isProd
   ? 'https://atu-traffic-pulse-backend.onrender.com'
   : 'http://localhost:5000';
 
-const REQUEST_TIMEOUT = 10000; // 10 segundos timeout
+const REQUEST_TIMEOUT = 30000; // 30 segundos timeout (Render puede tardar en "despertar")
+const MAX_RETRIES = 3; // Número de reintentos antes de fallar
 
-// Función helper para agregar timeout a fetch
-const fetchWithTimeout = async (url: string, timeout = REQUEST_TIMEOUT): Promise<Response> => {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeout);
+// Función helper para agregar timeout a fetch con reintentos
+const fetchWithTimeout = async (url: string, timeout = REQUEST_TIMEOUT, retries = MAX_RETRIES): Promise<Response> => {
+  let lastError: Error | null = null;
   
-  try {
-    const response = await fetch(url, { 
-      signal: controller.signal,
-      headers: {
-        'Content-Type': 'application/json',
+  for (let attempt = 0; attempt < retries; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+    
+    try {
+      console.log(`Intento ${attempt + 1}/${retries} para ${url}`);
+      const response = await fetch(url, { 
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      clearTimeout(timeoutId);
+      
+      if (response.ok) {
+        console.log(`✅ Petición exitosa a ${url}`);
+        return response;
       }
-    });
-    clearTimeout(timeoutId);
-    return response;
-  } catch (error) {
-    clearTimeout(timeoutId);
-    throw error;
+      
+      // Si el servidor responde pero con error, no reintentar
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    } catch (error) {
+      clearTimeout(timeoutId);
+      lastError = error as Error;
+      
+      // Si es el último intento, lanzar el error
+      if (attempt === retries - 1) {
+        console.error(`❌ Falló después de ${retries} intentos: ${lastError.message}`);
+        throw lastError;
+      }
+      
+      // Esperar antes del siguiente intento (backoff exponencial)
+      const waitTime = Math.min(1000 * Math.pow(2, attempt), 5000);
+      console.log(`⏳ Reintentando en ${waitTime}ms...`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
   }
+  
+  throw lastError || new Error('Failed after retries');
 };
 
 class TrafficService {
   private isServerRunning = false;
+  private serverCheckInProgress = false;
 
   async checkServerStatus(): Promise<boolean> {
+    // Evitar múltiples checks simultáneos
+    if (this.serverCheckInProgress) {
+      return this.isServerRunning;
+    }
+    
+    this.serverCheckInProgress = true;
+    
     try {
-      const response = await fetchWithTimeout(`${PYTHON_MAP_BASE_URL}/api/debug`, 5000);
+      console.log('🔍 Verificando estado del servidor backend...');
+      const response = await fetchWithTimeout(`${PYTHON_MAP_BASE_URL}/api/debug`, 30000, 3);
       this.isServerRunning = response.ok;
+      console.log(`✅ Servidor backend: ${this.isServerRunning ? 'CONECTADO' : 'NO DISPONIBLE'}`);
       return this.isServerRunning;
     } catch (error) {
-      console.error('Error checking Python server status:', error);
+      console.error('❌ Error al verificar servidor backend:', error);
       this.isServerRunning = false;
       return false;
+    } finally {
+      this.serverCheckInProgress = false;
     }
   }
 
   async getKPIs(): Promise<TrafficKPIs | null> {
     try {
-      if (!await this.checkServerStatus()) {
-        return this.getMockKPIs();
-      }
-
-      const response = await fetch(`${PYTHON_MAP_BASE_URL}/api/kpis`);
+      console.log('📊 Obteniendo KPIs del backend...');
+      const response = await fetchWithTimeout(`${PYTHON_MAP_BASE_URL}/api/kpis`);
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch KPIs');
+        throw new Error(`Failed to fetch KPIs: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
+      console.log('✅ KPIs obtenidos:', data);
       
       // Calcular tiempo promedio de viaje basado en la congestión
       const averageTravelTime = this.calculateAverageTravelTime(data.congestion_percentage);
@@ -127,43 +164,44 @@ class TrafficService {
         averageTravelTime
       };
     } catch (error) {
-      console.error('Error fetching KPIs from Python server:', error);
-      return this.getMockKPIs();
+      console.error('❌ Error al obtener KPIs del servidor Python:', error);
+      // NO devolver datos mock - dejar que la UI maneje el error
+      return null;
     }
   }
 
   async getTrafficSegments(): Promise<TrafficSegment[]> {
     try {
-      if (!await this.checkServerStatus()) {
-        return [];
-      }
-
-      const response = await fetch(`${PYTHON_MAP_BASE_URL}/api/traffic_data`);
+      console.log('🚦 Obteniendo segmentos de tráfico del backend...');
+      const response = await fetchWithTimeout(`${PYTHON_MAP_BASE_URL}/api/traffic_data`);
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch traffic segments');
+        throw new Error(`Failed to fetch traffic segments: ${response.status}`);
       }
 
-      return await response.json();
+      const data = await response.json();
+      console.log(`✅ ${data.length} segmentos obtenidos`);
+      return data;
     } catch (error) {
-      console.error('Error fetching traffic segments:', error);
+      console.error('❌ Error al obtener segmentos de tráfico:', error);
       return [];
     }
   }
 
   async getDebugInfo(): Promise<DebugInfo | null> {
     try {
-      if (!await this.checkServerStatus()) {
-        return null;
-      }
-
-      const response = await fetch(`${PYTHON_MAP_BASE_URL}/api/debug`);
+      console.log('🔧 Obteniendo información de debug...');
+      const response = await fetchWithTimeout(`${PYTHON_MAP_BASE_URL}/api/debug`);
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch debug info');
+        throw new Error(`Failed to fetch debug info: ${response.status}`);
       }
 
-      return await response.json();
+      const data = await response.json();
+      console.log('✅ Debug info obtenida:', data);
+      return data;
     } catch (error) {
-      console.error('Error fetching debug info:', error);
+      console.error('❌ Error al obtener debug info:', error);
       return null;
     }
   }
@@ -172,75 +210,85 @@ class TrafficService {
 
   async getCurrentInterval(): Promise<CurrentInterval> {
     try {
-      if (!await this.checkServerStatus()) {
-        return this.getMockCurrentInterval();
-      }
-
+      console.log('⏰ Obteniendo intervalo actual...');
       const response = await fetchWithTimeout(`${PYTHON_MAP_BASE_URL}/api/current_interval`);
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch current interval');
+        throw new Error(`Failed to fetch current interval: ${response.status}`);
       }
 
-      return await response.json();
+      const data = await response.json();
+      console.log('✅ Intervalo actual:', data.current_interval);
+      return data;
     } catch (error) {
-      console.error('Error fetching current interval:', error);
-      return this.getMockCurrentInterval();
+      console.error('❌ Error al obtener intervalo actual:', error);
+      // Devolver un valor por defecto seguro
+      return {
+        current_interval: 'Cargando...',
+        simulation_step: 0,
+        total_intervals: 0
+      };
     }
   }
 
   async getAllIntervals(): Promise<string[]> {
     try {
-      if (!await this.checkServerStatus()) {
-        return this.getMockIntervals();
-      }
-
-      const response = await fetch(`${PYTHON_MAP_BASE_URL}/api/intervals`);
+      console.log('📅 Obteniendo todos los intervalos...');
+      const response = await fetchWithTimeout(`${PYTHON_MAP_BASE_URL}/api/intervals`);
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch intervals');
+        throw new Error(`Failed to fetch intervals: ${response.status}`);
       }
 
       const data = await response.json();
+      console.log(`✅ ${data.intervals?.length || 0} intervalos obtenidos`);
       return data.intervals || [];
     } catch (error) {
-      console.error('Error fetching intervals:', error);
-      return this.getMockIntervals();
+      console.error('❌ Error al obtener intervalos:', error);
+      return [];
     }
   }
 
   async getUCPByInterval(): Promise<UCPByInterval[]> {
     try {
-      if (!await this.checkServerStatus()) {
-        return this.getMockUCPByInterval();
-      }
-
+      console.log('📈 Obteniendo UCP por intervalo...');
       const response = await fetchWithTimeout(`${PYTHON_MAP_BASE_URL}/api/ucp_by_interval`);
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch UCP by interval');
+        throw new Error(`Failed to fetch UCP by interval: ${response.status}`);
       }
 
       const data = await response.json();
       
       // Asegurar que todos los valores sean seguros
-      return data.map((item: Record<string, unknown>) => ({
+      const result = data.map((item: Record<string, unknown>) => ({
         interval: String(item.interval || ''),
         total_ucp: Number(item.total_ucp) || 0
       }));
+      
+      console.log(`✅ ${result.length} registros UCP obtenidos`);
+      return result;
     } catch (error) {
-      console.error('Error fetching UCP by interval:', error);
-      return this.getMockUCPByInterval();
+      console.error('❌ Error al obtener UCP por intervalo:', error);
+      return [];
     }
   }
 
   async getVehiclesByIntervalAndSegment(interval: string): Promise<VehicleByIntervalAndSegment[]> {
     try {
-      const response = await fetchWithTimeout(`${PYTHON_MAP_BASE_URL}/api/vehicles_by_interval_and_segment?interval=${encodeURIComponent(interval)}`);
+      console.log(`🚗 Obteniendo vehículos para intervalo: ${interval}...`);
+      const response = await fetchWithTimeout(
+        `${PYTHON_MAP_BASE_URL}/api/vehicles_by_interval_and_segment?interval=${encodeURIComponent(interval)}`
+      );
+      
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
+      
       const data = await response.json();
       
       // Asegurar que todos los valores numéricos existan
-      return data.map((item: Record<string, unknown>) => ({
+      const result = data.map((item: Record<string, unknown>) => ({
         segment_id: String(item.segment_id || ''),
         segment_name: String(item.segment_name || ''),
         autos: Number(item.autos) || 0,
@@ -251,72 +299,81 @@ class TrafficService {
         ucp: Number(item.ucp) || 0,
         ocupacion: Number(item.ocupacion) || 0
       }));
+      
+      console.log(`✅ ${result.length} registros de vehículos obtenidos`);
+      return result;
     } catch (error) {
-      console.error('Error fetching vehicles by interval and segment:', error);
-      // En caso de error, devolver datos mock básicos
-      return this.getMockVehiclesByInterval(interval);
+      console.error('❌ Error al obtener vehículos por intervalo y segmento:', error);
+      return [];
     }
   }
 
   async getVehicleDetailsByInterval(): Promise<VehicleDetailByInterval[]> {
     try {
-      if (!await this.checkServerStatus()) {
-        return this.getMockVehicleDetails();
-      }
-
-      const response = await fetch(`${PYTHON_MAP_BASE_URL}/api/vehicles_by_interval_and_segment`);
+      console.log('🔍 Obteniendo detalles de vehículos...');
+      const response = await fetchWithTimeout(`${PYTHON_MAP_BASE_URL}/api/vehicles_by_interval_and_segment`);
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch vehicle details by interval');
+        throw new Error(`Failed to fetch vehicle details: ${response.status}`);
       }
 
-      return await response.json();
+      const data = await response.json();
+      console.log(`✅ ${data.length} registros de detalles obtenidos`);
+      return data;
     } catch (error) {
-      console.error('Error fetching vehicle details by interval:', error);
-      return this.getMockVehicleDetails();
+      console.error('❌ Error al obtener detalles de vehículos:', error);
+      return [];
     }
   }
 
-  // Generar datos de UCP por intervalo para la gráfica (reemplaza getUCPByHour)
+  // Generar datos de UCP por intervalo para la gráfica
   async getUCPByIntervalForChart(): Promise<Array<{ interval: string; ucp: number }>> {
     try {
+      console.log('📊 Generando datos UCP para gráficos...');
       const ucpData = await this.getUCPByInterval();
-      return ucpData.map(data => ({
+      const result = ucpData.map(data => ({
         interval: data.interval,
         ucp: data.total_ucp
       }));
+      console.log(`✅ ${result.length} puntos de datos UCP generados`);
+      return result;
     } catch (error) {
-      console.error('Error generating UCP by interval for chart:', error);
-      return this.getMockUCPByInterval().map(data => ({
-        interval: data.interval,
-        ucp: data.total_ucp
-      }));
+      console.error('❌ Error al generar datos UCP para gráficos:', error);
+      return [];
     }
   }
 
   // Generar datos detallados por segmento e intervalo para la tabla
   async getDetailedTrafficDataByInterval(): Promise<Array<{ id: number; interval: string; vehiculos: number; segmento: string; vehicle_details: Record<string, number> }>> {
     try {
+      console.log('📋 Generando datos detallados por intervalo...');
       const details = await this.getVehicleDetailsByInterval();
       
-      return details.map((detail, index) => ({
+      const result = details.map((detail, index) => ({
         id: index + 1,
         interval: detail.interval,
         vehiculos: detail.total_vehicles,
         segmento: detail.segment,
         vehicle_details: detail.vehicle_counts
       }));
+      
+      console.log(`✅ ${result.length} registros detallados generados`);
+      return result;
     } catch (error) {
-      console.error('Error generating detailed traffic data by interval:', error);
-      return this.getMockDetailedDataByInterval();
+      console.error('❌ Error al generar datos detallados por intervalo:', error);
+      return [];
     }
   }
 
-  // Generar datos detallados por segmento y hora para la tabla
+  // Generar datos detallados por segmento y hora para la tabla (método legacy)
   async getDetailedTrafficData(): Promise<Array<{ id: number; hora: string; vehiculos: number; segmento: string }>> {
     try {
+      console.log('📋 Generando datos detallados...');
       const segments = await this.getTrafficSegments();
+      
       if (segments.length === 0) {
-        return this.getMockDetailedData();
+        console.warn('⚠️ No hay segmentos disponibles');
+        return [];
       }
 
       // Convertir datos reales de segmentos a formato de tabla
@@ -344,10 +401,11 @@ class TrafficService {
         });
       });
 
+      console.log(`✅ ${detailedData.length} registros generados`);
       return detailedData;
     } catch (error) {
-      console.error('Error generating detailed traffic data:', error);
-      return this.getMockDetailedData();
+      console.error('❌ Error al generar datos detallados:', error);
+      return [];
     }
   }
 
