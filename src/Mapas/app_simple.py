@@ -1,6 +1,7 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, render_template
 from flask_cors import CORS
 import random
+import os
 
 app = Flask(__name__)
 
@@ -37,11 +38,42 @@ current_step = 0
 
 @app.route('/')
 def index():
-    return jsonify({
-        'message': 'ATU Traffic Pulse Backend API',
-        'status': 'running',
-        'endpoints': ['/api/kpis', '/api/traffic_data', '/api/debug']
-    })
+    # Intentar renderizar el template HTML si existe
+    if os.path.exists('templates/map.html'):
+        return render_template('map.html')
+    # Si no, mostrar página simple
+    return '''
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>ATU Traffic Pulse Backend</title>
+        <style>
+            body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+            h1 { color: #333; }
+            .status { background: #4CAF50; color: white; padding: 10px; border-radius: 5px; }
+            .endpoints { background: #f4f4f4; padding: 15px; border-radius: 5px; margin-top: 20px; }
+            code { background: #ddd; padding: 2px 5px; border-radius: 3px; }
+        </style>
+    </head>
+    <body>
+        <h1>🚦 ATU Traffic Pulse Backend API</h1>
+        <div class="status">✅ Status: Running</div>
+        <div class="endpoints">
+            <h3>Available Endpoints:</h3>
+            <ul>
+                <li><code>GET /api/kpis</code> - Traffic KPIs</li>
+                <li><code>GET /api/traffic_data</code> - Segment data</li>
+                <li><code>GET /api/debug</code> - Debug information</li>
+                <li><code>GET /api/current_interval</code> - Current time interval</li>
+                <li><code>GET /api/intervals</code> - All intervals</li>
+                <li><code>GET /api/ucp_by_interval</code> - UCP data</li>
+                <li><code>GET /api/vehicles_by_interval_and_segment</code> - Vehicle details</li>
+            </ul>
+        </div>
+        <p><strong>Note:</strong> This is a simplified version using mock data for faster performance.</p>
+    </body>
+    </html>
+    '''
 
 @app.route('/health')
 def health():
