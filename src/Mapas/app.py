@@ -9,15 +9,21 @@ import json
 import pickle
 from shapely.geometry import Polygon
 import logging
+from datetime import datetime
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Helper para agregar headers anti-caché a todas las respuestas API
+# ============================================
+# SOLUCIÓN 1: Headers anti-caché más fuertes
+# ============================================
 def add_no_cache_headers(response):
-    """Agrega headers para prevenir cualquier tipo de caché"""
-    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    """Agrega headers para prevenir CUALQUIER tipo de caché"""
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
     response.headers['Pragma'] = 'no-cache'
-    response.headers['Expires'] = '0'
+    response.headers['Expires'] = '-1'
+    response.headers['X-Accel-Expires'] = '0'
+    # ✅ CRÍTICO: Agregar timestamp para forzar cambios
+    response.headers['X-Timestamp'] = str(datetime.now().timestamp())
     return response
 
 # Archivos de caché
@@ -26,30 +32,31 @@ GRAPH_CACHE_FILE = os.path.join(CACHE_DIR, 'graph_cache.pkl')
 SEGMENTS_CACHE_FILE = os.path.join(CACHE_DIR, 'segments_cache.json')
 SECTIONS_CACHE_FILE = os.path.join(CACHE_DIR, 'sections_cache.json')
 
-# Crear directorio de caché si no existe
 if not os.path.exists(CACHE_DIR):
     os.makedirs(CACHE_DIR)
 
-# Configurar Flask con carpeta estática para las imágenes
 app = Flask(__name__, static_folder='../imagenes', static_url_path='/static/imagenes')
 
-# Configurar CORS para permitir el frontend de Render
+# ============================================
+# SOLUCIÓN 2: CORS más permisivo para Render
+# ============================================
 CORS(app, resources={
-    r"/api/*": {
-        "origins": [
-            "https://atu-traffic-pulse-frontend.onrender.com",
-            "http://localhost:5173",
-            "http://localhost:8080",
-            "http://localhost:4173"
-        ],
+    r"/*": {  # ✅ Cambiado de /api/* a /* para cubrir todo
+        "origins": "*",  # ✅ Más permisivo en producción
         "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type"]
+        "allow_headers": ["Content-Type", "Cache-Control", "X-Requested-With"],
+        "expose_headers": ["X-Timestamp"],  # ✅ Exponer timestamp
+        "max_age": 0  # ✅ Sin caché de preflight
     }
 })
 
-# =================================================================
-# CONFIGURACIÓN
-# =================================================================
+# ============================================
+# SOLUCIÓN 3: Variable global para tracking
+# ============================================
+last_update_timestamp = 0
+update_counter = 0
+
+# [... resto de configuraciones sin cambios ...]
 UCP_WEIGHTS = {
     'Auto': 1.0, 'Taxi': 1.0, 'Omnibus': 3.0, 'Microbús': 2.0,
     'Camioneta rural': 1.25, 'Moto lineal': 0.333, 'Mototaxi': 0.75,
@@ -58,65 +65,45 @@ UCP_WEIGHTS = {
 }
 
 KEY_INTERSECTIONS_IDA = [
-    [-12.180248, -76.943505],  # Punto 1
-    [-12.178283, -76.944721],  # Punto 2
-    [-12.175114, -76.946517],  # Punto 3
-    [-12.172546, -76.948311],  # Punto 4
+    [-12.180248, -76.943505],
+    [-12.178283, -76.944721],
+    [-12.175114, -76.946517],
+    [-12.172546, -76.948311],
 ]
 
 KEY_INTERSECTIONS_VUELTA = [
-    [-12.172839, -76.948411],  # Punto 4
-    [-12.175273, -76.946697],  # Punto 3
-    [-12.178550, -76.944770],  # Punto 2
-    [-12.180411, -76.943712]   # Punto 1
+    [-12.172839, -76.948411],
+    [-12.175273, -76.946697],
+    [-12.178550, -76.944770],
+    [-12.180411, -76.943712]
 ]
 
 SEGMENT_NAMES = {
     "VMT→SJM": [
-        "1 - Av. Pachacutec VTM -> SJM",  # Entre punto 1 y 2
-        "2 - Av. Pachacutec VTM -> SJM",  # Entre punto 2 y 3
-        "3 - Av. Pachacutec VTM -> SJM"   # Entre punto 3 y 4
+        "1 - Av. Pachacutec VTM -> SJM",
+        "2 - Av. Pachacutec VTM -> SJM",
+        "3 - Av. Pachacutec VTM -> SJM"
     ],
     "SJM→VMT": [
-        "1 - Av. Pachacutec SJM -> VTM",  # Entre punto 4 y 3
-        "2 - Av. Pachacutec SJM -> VTM",  # Entre punto 3 y 2
-        "3 - Av. Pachacutec SJM -> VTM"   # Entre punto 2 y 1
+        "1 - Av. Pachacutec SJM -> VTM",
+        "2 - Av. Pachacutec SJM -> VTM",
+        "3 - Av. Pachacutec SJM -> VTM"
     ]
 }
 
-# ✅ MAPEO CORRECTO SEGÚN LA LÓGICA EXPLICADA
-# (NroPunto, Sentido) -> (Segmento afectado, Operación)
-# Sentido 1: IDA - ENTRADA a intersección (RESTAR del segmento anterior)
-# Sentido 2: VUELTA - ENTRADA a intersección (RESTAR del segmento anterior)
-# Sentido 3: IDA - SALIDA de intersección (SUMAR al segmento siguiente)
-# Sentido 4: VUELTA - SALIDA de intersección (SUMAR al segmento siguiente)
-
 SEGMENT_MAPPING = {
-    # === PUNTO 1 (Extremo VMT) ===
-    # Solo tiene sentido 2 (llegan de vuelta) y 3 (salen de ida)
-    (1, 2): ("3 - Av. Pachacutec SJM -> VTM", -1),  # ENTRAN a punto 1 desde segmento 3 VUELTA
-    (1, 3): ("1 - Av. Pachacutec VTM -> SJM", +1),  # SALEN de punto 1 hacia segmento 1 IDA
-    
-    # === PUNTO 2 ===
-    # Sentido 1: llegan de IDA desde segmento 1
-    (2, 1): ("1 - Av. Pachacutec VTM -> SJM", -1),  # ENTRAN a punto 2 desde segmento 1 IDA
-    # Sentido 2: llegan de VUELTA desde segmento 2
-    (2, 2): ("2 - Av. Pachacutec SJM -> VTM", -1),  # ENTRAN a punto 2 desde segmento 2 VUELTA
-    # Sentido 3: salen de IDA hacia segmento 2
-    (2, 3): ("2 - Av. Pachacutec VTM -> SJM", +1),  # SALEN de punto 2 hacia segmento 2 IDA
-    # Sentido 4: salen de VUELTA hacia segmento 3
-    (2, 4): ("3 - Av. Pachacutec SJM -> VTM", +1),  # SALEN de punto 2 hacia segmento 3 VUELTA
-    
-    # === PUNTO 3 ===
-    (3, 1): ("2 - Av. Pachacutec VTM -> SJM", -1),  # ENTRAN a punto 3 desde segmento 2 IDA
-    (3, 2): ("1 - Av. Pachacutec SJM -> VTM", -1),  # ENTRAN a punto 3 desde segmento 1 VUELTA
-    (3, 3): ("3 - Av. Pachacutec VTM -> SJM", +1),  # SALEN de punto 3 hacia segmento 3 IDA
-    (3, 4): ("2 - Av. Pachacutec SJM -> VTM", +1),  # SALEN de punto 3 hacia segmento 2 VUELTA
-    
-    # === PUNTO 4 (Extremo SJM) ===
-    # Solo tiene sentido 1 (llegan de ida) y 4 (salen de vuelta)
-    (4, 1): ("3 - Av. Pachacutec VTM -> SJM", -1),  # ENTRAN a punto 4 desde segmento 3 IDA
-    (4, 4): ("1 - Av. Pachacutec SJM -> VTM", +1),  # SALEN de punto 4 hacia segmento 1 VUELTA
+    (1, 2): ("3 - Av. Pachacutec SJM -> VTM", -1),
+    (1, 3): ("1 - Av. Pachacutec VTM -> SJM", +1),
+    (2, 1): ("1 - Av. Pachacutec VTM -> SJM", -1),
+    (2, 2): ("2 - Av. Pachacutec SJM -> VTM", -1),
+    (2, 3): ("2 - Av. Pachacutec VTM -> SJM", +1),
+    (2, 4): ("3 - Av. Pachacutec SJM -> VTM", +1),
+    (3, 1): ("2 - Av. Pachacutec VTM -> SJM", -1),
+    (3, 2): ("1 - Av. Pachacutec SJM -> VTM", -1),
+    (3, 3): ("3 - Av. Pachacutec VTM -> SJM", +1),
+    (3, 4): ("2 - Av. Pachacutec SJM -> VTM", +1),
+    (4, 1): ("3 - Av. Pachacutec VTM -> SJM", -1),
+    (4, 4): ("1 - Av. Pachacutec SJM -> VTM", +1),
 }
 
 ROUTE_POLYGON = Polygon([
@@ -153,8 +140,6 @@ ROUTE_POLYGON = Polygon([
 LANES_PER_ROAD = 3
 METERS_PER_UCP = 6
 
-# ✅ INVENTARIO INICIAL (Estado de los segmentos a las 6:00 AM)
-# Valores estimados: ~30% de la capacidad del segmento
 INITIAL_INVENTORY = {
     "1 - Av. Pachacutec VTM -> SJM": {
         'Auto': 20, 'Taxi': 15, 'Omnibus': 5, 'Microbús': 8,
@@ -194,10 +179,12 @@ traffic_df = None
 time_intervals = []
 simulation_step = 0
 
+# [... funciones load_traffic_data, save_cache, load_from_cache, load_and_structure_data sin cambios ...]
+
 def load_traffic_data():
     global traffic_df, time_intervals
     try:
-        file_path = 'data_transito.xlsx'  # Archivo en el directorio actual
+        file_path = 'data_transito.xlsx'
         logging.info(f"Cargando datos de tráfico desde '{file_path}'...")
         traffic_df = pd.read_excel(file_path)
         traffic_df.columns = traffic_df.columns.str.strip()
@@ -205,33 +192,26 @@ def load_traffic_data():
         logging.info(f"✅ Datos de tráfico cargados. {len(traffic_df)} registros encontrados.")
         logging.info(f"Intervalos de simulación ({len(time_intervals)}): {time_intervals}")
     except FileNotFoundError:
-        logging.warning(f"⚠️ ADVERTENCIA: No se encontró el archivo '{file_path}'. El programa funcionará sin datos de tráfico.")
+        logging.warning(f"⚠️ ADVERTENCIA: No se encontró el archivo '{file_path}'.")
         traffic_df = pd.DataFrame()
         time_intervals = []
     except Exception as e:
-        logging.warning(f"⚠️ ADVERTENCIA al leer el archivo Excel: {e}. El programa funcionará sin datos de tráfico.")
+        logging.warning(f"⚠️ ADVERTENCIA al leer el archivo Excel: {e}.")
         traffic_df = pd.DataFrame()
         time_intervals = []
 
 def save_cache():
-    """Guardar datos en caché"""
     try:
         logging.info("💾 Guardando datos en caché...")
-        
-        # Guardar segments
         with open(SEGMENTS_CACHE_FILE, 'w') as f:
             json.dump(road_segments_data, f)
-        
-        # Guardar sections (sin los sets que no son serializables)
         sections_to_save = []
         for section in sections:
             section_copy = section.copy()
-            section_copy['edges'] = list(section_copy['edges'])  # Convertir set a list
+            section_copy['edges'] = list(section_copy['edges'])
             sections_to_save.append(section_copy)
-        
         with open(SECTIONS_CACHE_FILE, 'w') as f:
             json.dump(sections_to_save, f)
-        
         logging.info("✅ Caché guardado exitosamente")
         return True
     except Exception as e:
@@ -239,28 +219,20 @@ def save_cache():
         return False
 
 def load_from_cache():
-    """Cargar datos desde caché"""
     global road_segments_data, sections
-    
     try:
         if not os.path.exists(SEGMENTS_CACHE_FILE) or not os.path.exists(SECTIONS_CACHE_FILE):
             logging.info("⚠️ Archivos de caché no encontrados")
             return False
-        
         logging.info("📂 Cargando datos desde caché...")
-        
-        # Cargar segments
         with open(SEGMENTS_CACHE_FILE, 'r') as f:
             road_segments_data = json.load(f)
-        
-        # Cargar sections
         with open(SECTIONS_CACHE_FILE, 'r') as f:
             sections_loaded = json.load(f)
             sections = []
             for section in sections_loaded:
-                section['edges'] = set(section['edges'])  # Convertir list de vuelta a set
+                section['edges'] = set(section['edges'])
                 sections.append(section)
-        
         logging.info(f"✅ Caché cargado: {len(road_segments_data)} segmentos, {len(sections)} secciones")
         return True
     except Exception as e:
@@ -270,19 +242,17 @@ def load_from_cache():
 def load_and_structure_data():
     global road_segments_data, sections
     
-    # Primero intentar cargar desde caché
     if load_from_cache():
         logging.info("✅ Datos cargados desde caché - Inicio rápido")
         return
     
-    logging.info("=" * 70)
+    logging.info("="*70)
     logging.info("🔄 INICIANDO CARGA DE DATOS DEL MAPA (sin caché)...")
-    logging.info("=" * 70)
+    logging.info("="*70)
     logging.info("1. Descargando la red de calles desde OpenStreetMap...")
     logging.info("   (Esto puede tardar 1-2 minutos en la primera ejecución)")
     
     try:
-        # Configurar cache de OSMnx
         ox.settings.use_cache = True
         ox.settings.log_console = True
         
@@ -359,7 +329,6 @@ def load_and_structure_data():
                         capacity = (total_length / METERS_PER_UCP) * LANES_PER_ROAD
                         section_info['ucp_capacity'] = round(capacity, 2)
                     
-                    # ✅ APLICAR INVENTARIO INICIAL
                     segment_name = section_info['segment_name']
                     if segment_name in INITIAL_INVENTORY:
                         section_info['vehicle_counts'] = INITIAL_INVENTORY[segment_name].copy()
@@ -376,9 +345,19 @@ def load_and_structure_data():
 
             except Exception as e:
                 logging.error(f"❌ Fallo al calcular la sección {i} ({dir_name}): {e}")
+    
+    # ✅ Guardar caché después de cargar exitosamente
+    save_cache()
+    logging.info("✅ Estructuración de datos completada")
 
 def recalculate_segment_states():
     """Recalcula la densidad UCP y el color para todos los segmentos."""
+    global last_update_timestamp, update_counter
+    
+    # ✅ SOLUCIÓN 3: Actualizar timestamp
+    last_update_timestamp = time.time()
+    update_counter += 1
+    
     color_summary = []
     for section in sections:
         total_ucp = 0
@@ -401,18 +380,15 @@ def recalculate_segment_states():
         else:
             new_color = 'red'
         
-        # Aplicar el nuevo color a todos los edges sin verificar cambios
         for road_id in section["edges"]:
             if road_id in road_segments_data:
                 road_segments_data[road_id]['color'] = new_color
         
-        # Solo para logging
         color_summary.append(f"{section['segment_name'][:20]}: {occupancy_percentage:.1f}% → {new_color}")
     
-    logging.info(f"🎨 Colores actualizados: {len(sections)} segmentos procesados")
+    logging.info(f"🎨 Actualización #{update_counter} - Timestamp: {last_update_timestamp}")
 
 def update_traffic_periodically():
-    """Lógica de simulación con nueva regla de evacuación al 45%."""
     global simulation_step
     while True:
         if traffic_df is None or traffic_df.empty or not time_intervals:
@@ -420,7 +396,6 @@ def update_traffic_periodically():
             time.sleep(10)
             continue
 
-        # REINICIAR CON INVENTARIO INICIAL al inicio del ciclo
         if simulation_step == 0:
             logging.info("🔄 REINICIANDO SIMULACIÓN - Aplicando inventario inicial")
             for section in sections:
@@ -430,11 +405,9 @@ def update_traffic_periodically():
                 else:
                     section['vehicle_counts'] = {vtype: 0 for vtype in UCP_WEIGHTS.keys()}
         
-        # 1. Seleccionar intervalo actual
         current_interval = time_intervals[simulation_step]
         logging.info(f"\n{'='*70}\n⏰ INTERVALO: {current_interval}\n{'='*70}")
         
-        # 2. Filtrar y procesar datos del Excel
         interval_data = traffic_df[traffic_df['HoraControl'] == current_interval]
         for _, row in interval_data.iterrows():
             key = (int(row['NroPunto']), int(row['Sentido']))
@@ -442,47 +415,37 @@ def update_traffic_periodically():
                 segment_name, operation = SEGMENT_MAPPING[key]
                 v_type = row['TipoVehiculo'].strip()
                 quantity = row['Cantidad']
-                
                 for section in sections:
                     if section['segment_name'] == segment_name:
                         if v_type in section['vehicle_counts']:
                             new_count = section['vehicle_counts'][v_type] + (quantity * operation)
-                            # Asegurar que el conteo no sea negativo
                             section['vehicle_counts'][v_type] = max(0, new_count)
                         break
         
-        ## <<< LÓGICA ANTERIOR ELIMINADA >>>
-        ## Se ha quitado el sistema de evacuación de dos etapas.
-
-        ## <<< NUEVA LÓGICA SIMPLIFICADA >>>
-        # 3. VERIFICAR OCUPACIÓN Y APLICAR REDUCCIÓN SI SUPERA EL 100%
         for section in sections:
-            # Primero, recalculamos la UCP y el porcentaje con los datos actuales
             current_ucp = sum(section['vehicle_counts'][vt] * UCP_WEIGHTS.get(vt, 0) for vt in section['vehicle_counts'])
             capacity = section.get('ucp_capacity', 0)
             occupancy = 0
             if capacity > 0:
                 occupancy = (current_ucp / capacity) * 100
-            
-            # Si la ocupación supera el 100%, aplicamos la reducción al 45%
             if occupancy > 100:
                 logging.info(f"  ⚠️ EVACUACIÓN en '{section['segment_name']}': Ocupación ({occupancy:.1f}%) > 100%. Reduciendo al 45%.")
                 for v_type in section['vehicle_counts']:
                     current_count = section['vehicle_counts'][v_type]
-                    # Reducimos cada tipo de vehículo AL 45% de su valor actual
                     section['vehicle_counts'][v_type] = int(current_count * 0.45)
 
-        # 4. Recalcular estados finales (UCP y color) y mostrar logs
         recalculate_segment_states()
-        
         logging.info(f"\n📊 ESTADO FINAL DE SEGMENTOS:")
         for section in sections:
             total_vehicles = sum(section['vehicle_counts'].values())
             logging.info(f"  🚗 '{section['segment_name']}': {int(total_vehicles)} veh | {section['ucp_density']} UCP | {section['occupancy_percentage']}% ocupado")
         
-        # 5. Avanzar al siguiente paso
         simulation_step = (simulation_step + 1) % len(time_intervals)
         time.sleep(10)
+
+# ============================================
+# ENDPOINTS CON MEJORAS
+# ============================================
 
 @app.route('/')
 def map_page():
@@ -491,38 +454,48 @@ def map_page():
 
 @app.route('/health')
 def health_check():
-    """Endpoint simple para verificar que el servidor está vivo"""
-    return jsonify({'status': 'ok', 'message': 'Server is running'}), 200
+    return jsonify({
+        'status': 'ok',
+        'message': 'Server is running',
+        'timestamp': datetime.now().isoformat(),
+        'update_counter': update_counter
+    }), 200
 
 @app.route('/api/status')
 def get_status():
-    """Endpoint para verificar el estado de inicialización"""
-    return jsonify({
+    return add_no_cache_headers(jsonify({
         'status': 'initializing' if not road_segments_data or not sections else 'ready',
         'road_segments_loaded': len(road_segments_data),
         'sections_loaded': len(sections),
         'traffic_data_loaded': traffic_df is not None and not traffic_df.empty,
-        'intervals_count': len(time_intervals)
-    }), 200
+        'intervals_count': len(time_intervals),
+        'last_update': last_update_timestamp,
+        'update_counter': update_counter
+    }))
 
 @app.route('/api/road_data')
 def get_road_data():
-    # Forzar recalcular antes de devolver datos para asegurar sincronización
     recalculate_segment_states()
-    
     route_segments = [road for road in road_segments_data.values() if road['color'] != 'gray']
     
-    # Log para debugging: contar colores
+    # ✅ SOLUCIÓN 4: Agregar metadata de actualización
+    response_data = {
+        'segments': route_segments,
+        'timestamp': last_update_timestamp,
+        'update_counter': update_counter,
+        'server_time': datetime.now().isoformat()
+    }
+    
     color_counts = {'green': 0, 'yellow': 0, 'red': 0}
     for road in route_segments:
         color = road.get('color', 'gray')
         if color in color_counts:
             color_counts[color] += 1
     
-    logging.info(f"📡 /api/road_data → Enviando {len(route_segments)} segmentos: "
+    logging.info(f"📡 /api/road_data #{update_counter} → {len(route_segments)} segmentos: "
                 f"🟢{color_counts['green']} 🟡{color_counts['yellow']} 🔴{color_counts['red']}")
     
-    return add_no_cache_headers(jsonify(route_segments))
+    return add_no_cache_headers(jsonify(response_data))
 
 @app.route('/api/traffic_data')
 def get_traffic_data():
@@ -537,51 +510,57 @@ def get_traffic_data():
             "occupancy_percentage": s.get("occupancy_percentage", 0),
             "total_vehicles": sum(s["vehicle_counts"].values())
         })
-    return add_no_cache_headers(jsonify(clean_sections))
+    
+    response_data = {
+        'sections': clean_sections,
+        'timestamp': last_update_timestamp,
+        'update_counter': update_counter
+    }
+    
+    return add_no_cache_headers(jsonify(response_data))
 
 @app.route('/api/kpis')
 def get_kpis():
-    """
-    Calcula y devuelve los KPIs generales de la simulación:
-    - % Ocupación: UCP total actual vs. capacidad UCP total.
-    - % Congestión: Porcentaje de segmentos en estado 'rojo'.
-    """
-    # 1. Inicializar variables
     total_current_ucp = 0
     total_ucp_capacity = 0
     red_segments_count = 0
     total_segments_count = len(sections)
 
-    # 2. Recorrer los segmentos para sumar los valores
     if total_segments_count > 0:
         for section in sections:
             total_current_ucp += section.get('ucp_density', 0)
             total_ucp_capacity += section.get('ucp_capacity', 0)
-            
-            # Contar segmentos en 'rojo' (ocupación > 80%)
             if section.get('occupancy_percentage', 0) > 80:
                 red_segments_count += 1
 
-    # 3. Calcular los KPIs
-    # KPI de Ocupación General
     overall_occupancy_percentage = 0
     if total_ucp_capacity > 0:
         overall_occupancy_percentage = (total_current_ucp / total_ucp_capacity) * 100
 
-    # KPI de Congestión (porcentaje de segmentos en rojo)
     congestion_percentage = 0
     if total_segments_count > 0:
         congestion_percentage = (red_segments_count / total_segments_count) * 100
 
-    # 4. Preparar la respuesta JSON
     kpis = {
         "overall_occupancy_percentage": round(overall_occupancy_percentage, 2),
         "congestion_percentage": round(congestion_percentage, 2),
         "red_segments_count": red_segments_count,
-        "total_segments_count": total_segments_count
+        "total_segments_count": total_segments_count,
+        "timestamp": last_update_timestamp,
+        "update_counter": update_counter
     }
 
     return add_no_cache_headers(jsonify(kpis))
+
+@app.route('/api/current_interval')
+def get_current_interval():
+    current_interval = time_intervals[simulation_step] if time_intervals else "N/A"
+    return add_no_cache_headers(jsonify({
+        'current_interval': current_interval,
+        'simulation_step': simulation_step,
+        'total_intervals': len(time_intervals),
+        'timestamp': last_update_timestamp
+    }))
 
 @app.route('/api/debug')
 def debug_info():
@@ -597,23 +576,8 @@ def debug_info():
         } for s in sections]
     }))
 
-@app.route('/api/current_interval')
-def get_current_interval():
-    """
-    Retorna el intervalo actual de la simulación
-    """
-    current_interval = time_intervals[simulation_step] if time_intervals else "N/A"
-    return add_no_cache_headers(jsonify({
-        'current_interval': current_interval,
-        'simulation_step': simulation_step,
-        'total_intervals': len(time_intervals)
-    }))
-
 @app.route('/api/intervals')
 def get_all_intervals():
-    """
-    Retorna todos los intervalos disponibles
-    """
     return add_no_cache_headers(jsonify({
         'intervals': time_intervals,
         'current_step': simulation_step
@@ -621,12 +585,7 @@ def get_all_intervals():
 
 @app.route('/api/ucp_by_interval')
 def get_ucp_by_interval():
-    """
-    Retorna datos UCP agrupados por intervalo de tiempo
-    """
     ucp_data = []
-    
-    # Solo mostrar datos para el intervalo actual
     current_interval = time_intervals[simulation_step] if time_intervals else "N/A"
     total_ucp = sum(section.get('ucp_density', 0) for section in sections)
     
@@ -635,7 +594,6 @@ def get_ucp_by_interval():
         'total_ucp': round(total_ucp, 2)
     })
     
-    # Para otros intervalos, mostrar 0 (siguiendo la lógica solicitada)
     for i, interval in enumerate(time_intervals):
         if i != simulation_step:
             ucp_data.append({
@@ -647,36 +605,26 @@ def get_ucp_by_interval():
 
 @app.route('/api/vehicles_by_interval_and_segment')
 def get_vehicles_by_interval_and_segment():
-    """
-    Retorna datos detallados de vehículos por intervalo y segmento
-    Solo muestra datos para el intervalo solicitado o el actual
-    """
-    # Obtener el intervalo solicitado desde query parameters
     requested_interval = request.args.get('interval')
     current_interval = time_intervals[simulation_step] if time_intervals else "N/A"
-    
-    # Si no se especifica intervalo, usar el actual
     target_interval = requested_interval if requested_interval else current_interval
     
     detailed_data = []
-    
-    # Mapeo de tipos de vehículos Python a frontend
     vehicle_mapping = {
         'Auto': 'autos',
-        'Taxi': 'autos',  # Los taxis se agrupan con autos
+        'Taxi': 'autos',
         'Omnibus': 'buses',
-        'Microbús': 'buses',  # Los microbuses se agrupan con buses
+        'Microbús': 'buses',
         'Bus Interprovincial': 'buses',
         'Camioneta rural': 'camionetas',
-        'Camión': 'camionetas',  # Los camiones se agrupan con camionetas
+        'Camión': 'camionetas',
         'Tráiler': 'camionetas',
         'Moto lineal': 'motos',
-        'Mototaxi': 'motos',  # Los mototaxis se agrupan con motos
-        'Bicicleta': 'motos'  # Las bicicletas se agrupan con motos para simplificar
+        'Mototaxi': 'motos',
+        'Bicicleta': 'motos'
     }
     
     for section in sections:
-        # Agrupar vehículos según el mapeo
         grouped_vehicles = {
             'autos': 0,
             'buses': 0,
@@ -684,16 +632,14 @@ def get_vehicles_by_interval_and_segment():
             'camionetas': 0
         }
         
-        # Solo mostrar datos reales si es el intervalo actual, si no, mostrar 0s
         if target_interval == current_interval:
             for vehicle_type, count in section['vehicle_counts'].items():
-                mapped_type = vehicle_mapping.get(vehicle_type, 'autos')  # Default a autos si no encuentra
+                mapped_type = vehicle_mapping.get(vehicle_type, 'autos')
                 grouped_vehicles[mapped_type] += count
         
-        # Solo agregar UNA fila por segmento para el intervalo solicitado
         detailed_data.append({
             'interval': target_interval,
-            'segment_id': section['segment_name'],  # Usar segment_name como ID también
+            'segment_id': section['segment_name'],
             'segment_name': section['segment_name'],
             'autos': grouped_vehicles['autos'],
             'buses': grouped_vehicles['buses'],
@@ -726,7 +672,6 @@ if __name__ == '__main__':
     logging.info(f"🚦 SERVIDOR LISTO. Accede a http://localhost:5000")
     app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
 else:
-    # Para producción con gunicorn
     logging.info("🚀 Iniciando en modo producción...")
     load_traffic_data()
     load_and_structure_data()
@@ -735,7 +680,6 @@ else:
         logging.critical("❌ ERROR CRÍTICO: No se pudieron cargar datos del mapa.")
     else:
         logging.info("\n" + "="*60 + "\n✅ ESTRUCTURACIÓN COMPLETADA\n" + "="*60)
-        
         traffic_thread = threading.Thread(target=update_traffic_periodically, daemon=True)
         traffic_thread.start()
         logging.info("🚦 SERVIDOR LISTO para producción")

@@ -4,9 +4,12 @@
     <title>Dashboard de Tráfico - Lima</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- ✅ SOLUCIÓN: Prevenir caché en el navegador -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"/>
     <style>
-        /* --- ESTRUCTURA PRINCIPAL --- */
         html, body {
             height: 100%;
             margin: 0;
@@ -15,9 +18,9 @@
         }
         
         #map-container {
-            height: 100vh; /* Ocupa toda la pantalla */
+            height: 100vh;
             width: 100vw;
-            position: relative; /* Necesario para los paneles absolutos del mapa */
+            position: relative;
         }
 
         #map { 
@@ -25,7 +28,6 @@
             width: 100%;
         }
 
-        /* --- PANELES DEL MAPA (Sin cambios importantes, solo se adaptan a #map-container) --- */
         .info-panel, .legend, .status-panel {
             position: absolute;
             z-index: 1000;
@@ -56,7 +58,6 @@
         .vehicle-item:last-child { border-bottom: none; }
         .close-button { position: absolute; top: 8px; right: 10px; background: none; border: none; font-size: 1.5em; cursor: pointer; color: #aaa; }
         
-        /* Estilos para la imagen de la cámara */
         .camera-section { margin: 10px 0; border-top: 1px solid #eee; padding-top: 10px; }
         .camera-section h4 { margin: 0 0 10px 0; font-size: 1em; color: #444; }
         .camera-image { 
@@ -92,17 +93,36 @@
             border-radius: 6px; 
             box-shadow: 0 2px 8px rgba(0,0,0,0.2); 
             text-align: center;
-            display: none; /* Ocultar el panel de intervalo de tiempo */
         }
         .status-panel h4 { margin: 0 0 5px 0; font-size: 0.9em; color: #333; }
         #simulation-interval { font-weight: bold; color: #0078A8; font-size: 1em; }
+        
+        /* ✅ Indicador de actualización */
+        .update-indicator {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            font-size: 0.85em;
+            z-index: 1000;
+        }
+        .update-indicator.updating {
+            background: #ffaa00;
+            color: white;
+        }
     </style>
 </head>
 <body>
-
-
     <div id="map-container">
         <div id="map"></div>
+
+        <!-- ✅ Indicador de actualización -->
+        <div class="update-indicator" id="update-indicator">
+            <span id="update-status">Cargando...</span>
+        </div>
 
         <div class="info-panel" id="segment-info-panel">
             <button class="close-button" onclick="hideInfoPanel()">×</button>
@@ -139,7 +159,14 @@
 
 <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
 <script>
-    // --- INICIALIZACIÓN DEL MAPA ---
+    // ============================================
+    // ✅ SOLUCIÓN: Variables de control de caché
+    // ============================================
+    let lastUpdateCounter = 0;
+    let lastTimestamp = 0;
+    let updateAttempts = 0;
+    let consecutiveFailures = 0;
+
     const map = L.map('map').setView([-12.176, -76.946], 16);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 19
@@ -148,7 +175,6 @@
     const roadLayer = L.layerGroup().addTo(map);
     let trafficDataStore = [];
 
-    // Mapeo de segmentos a imágenes de cámaras
     const segmentCameraMap = {
         '1 - Av. Pachacutec VTM -> SJM': { image: '/static/imagenes/1.png', name: 'Cámara Pachacutec Norte' },
         '2 - Av. Pachacutec VTM -> SJM': { image: '/static/imagenes/2.png', name: 'Cámara Pachacutec Centro' },
@@ -158,56 +184,144 @@
         '3 - Av. Pachacutec SJM -> VTM': { image: '/static/imagenes/2.png', name: 'Cámara Retorno Sur' }
     };
 
-    // --- FUNCIONES DE ACTUALIZACIÓN ---
+    // ============================================
+    // ✅ SOLUCIÓN: Fetch con cache busting
+    // ============================================
+    function fetchWithCacheBusting(url) {
+        const cacheBuster = `_=${Date.now()}&attempt=${updateAttempts}`;
+        const separator = url.includes('?') ? '&' : '?';
+        const finalUrl = `${url}${separator}${cacheBuster}`;
+        
+        return fetch(finalUrl, {
+            method: 'GET',
+            headers: {
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            },
+            cache: 'no-store'
+        });
+    }
+
+    // ============================================
+    // ✅ SOLUCIÓN: Actualizar indicador de estado
+    // ============================================
+    function updateStatusIndicator(status, message) {
+        const indicator = document.getElementById('update-indicator');
+        const statusText = document.getElementById('update-status');
+        
+        if (status === 'updating') {
+            indicator.classList.add('updating');
+            statusText.textContent = message || 'Actualizando...';
+        } else if (status === 'success') {
+            indicator.classList.remove('updating');
+            statusText.textContent = message || `✓ Actualizado #${lastUpdateCounter}`;
+        } else if (status === 'error') {
+            indicator.classList.remove('updating');
+            indicator.style.background = '#dd0000';
+            indicator.style.color = 'white';
+            statusText.textContent = message || '✗ Error de conexión';
+        }
+    }
 
     function updateStatusInfo() {
-        fetch('/api/debug')
-            .then(response => response.json())
+        fetchWithCacheBusting('/api/current_interval')
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.json();
+            })
             .then(data => {
                 if (data.current_interval) {
                     document.getElementById('simulation-interval').textContent = data.current_interval;
                 }
+                consecutiveFailures = 0;
             })
-            .catch(error => console.error('Error al obtener estado de simulación:', error));
+            .catch(error => {
+                console.error('Error al obtener estado de simulación:', error);
+                consecutiveFailures++;
+                if (consecutiveFailures > 3) {
+                    updateStatusIndicator('error', '✗ Sin conexión');
+                }
+            });
     }
 
     function updateTrafficDetails() {
-        // Esta función no necesita return-promise, pero la mantenemos por simplicidad
-        return fetch('/api/traffic_data')
-            .then(response => response.json())
-            .then(data => {
-                trafficDataStore = data;
-            })
-            .catch(error => console.error('Error al obtener detalles de tráfico:', error));
-    }
-
-    function updateRoads() {
-        console.log('📍 Obteniendo datos de carreteras...');
-        fetch('/api/road_data')
+        return fetchWithCacheBusting('/api/traffic_data')
             .then(response => {
-                console.log('📍 Response status:', response.status);
+                if (!response.ok) throw new Error('Network response was not ok');
                 return response.json();
             })
             .then(data => {
-                console.log(`✅ Recibidos ${data.length} segmentos de carretera`);
+                // ✅ Verificar si hay actualización real
+                const sections = data.sections || data;
+                const newTimestamp = data.timestamp || Date.now();
+                
+                if (newTimestamp !== lastTimestamp) {
+                    console.log(`🔄 Nueva actualización detectada: ${lastTimestamp} → ${newTimestamp}`);
+                    lastTimestamp = newTimestamp;
+                }
+                
+                trafficDataStore = sections;
+                consecutiveFailures = 0;
+            })
+            .catch(error => {
+                console.error('Error al obtener detalles de tráfico:', error);
+                consecutiveFailures++;
+            });
+    }
+
+    function updateRoads() {
+        updateAttempts++;
+        updateStatusIndicator('updating', 'Actualizando...');
+        
+        console.log(`📍 [${updateAttempts}] Obteniendo datos de carreteras...`);
+        
+        fetchWithCacheBusting('/api/road_data')
+            .then(response => {
+                console.log(`📍 Response status: ${response.status}`);
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.json();
+            })
+            .then(responseData => {
+                // ✅ Manejar el nuevo formato con metadata
+                const segments = responseData.segments || responseData;
+                const updateCounter = responseData.update_counter || 0;
+                const timestamp = responseData.timestamp || Date.now();
+                
+                console.log(`✅ [${updateAttempts}] Recibidos ${segments.length} segmentos`);
+                console.log(`📊 Update Counter: ${lastUpdateCounter} → ${updateCounter}`);
+                console.log(`⏰ Timestamp: ${timestamp}`);
+                
+                // ✅ Verificar si hay cambios reales
+                if (updateCounter === lastUpdateCounter && segments.length > 0) {
+                    console.warn('⚠️ Mismo update_counter - posible caché');
+                } else {
+                    lastUpdateCounter = updateCounter;
+                    console.log('✓ Datos nuevos confirmados');
+                }
                 
                 // Log de colores recibidos
                 const colorCounts = {green: 0, yellow: 0, red: 0, gray: 0};
-                data.forEach(road => {
+                segments.forEach(road => {
                     const color = road.color || 'gray';
                     colorCounts[color] = (colorCounts[color] || 0) + 1;
                 });
-                console.log(`🎨 Colores recibidos: 🟢${colorCounts.green} 🟡${colorCounts.yellow} 🔴${colorCounts.red} ⚪${colorCounts.gray}`);
+                console.log(`🎨 Colores: 🟢${colorCounts.green} 🟡${colorCounts.yellow} 🔴${colorCounts.red} ⚪${colorCounts.gray}`);
                 
+                // ✅ FORZAR re-renderizado completo
                 roadLayer.clearLayers();
-                const lineWeight = 6; 
-                data.forEach((road) => {
+                const lineWeight = 6;
+                
+                segments.forEach((road) => {
                     if (!road.coords || road.coords.length < 2) return;
                     
                     const colorMap = {'green': '#00aa00', 'yellow': '#ffaa00', 'red': '#dd0000'};
                     const polyline = L.polyline(road.coords, {
-                        color: colorMap[road.color] || '#808080', weight: lineWeight, opacity: 0.9,
-                        lineCap: 'round', lineJoin: 'round'
+                        color: colorMap[road.color] || '#808080',
+                        weight: lineWeight,
+                        opacity: 0.9,
+                        lineCap: 'round',
+                        lineJoin: 'round'
                     });
 
                     polyline.on('click', (e) => {
@@ -216,35 +330,43 @@
                         L.DomEvent.stopPropagation(e);
                     });
                     
-                    polyline.on('mouseover', function() { this.setStyle({ weight: lineWeight + 3, opacity: 1 }); });
-                    polyline.on('mouseout', function() { this.setStyle({ weight: lineWeight, opacity: 0.9 }); });
+                    polyline.on('mouseover', function() {
+                        this.setStyle({ weight: lineWeight + 3, opacity: 1 });
+                    });
+                    polyline.on('mouseout', function() {
+                        this.setStyle({ weight: lineWeight, opacity: 0.9 });
+                    });
                     
                     polyline.addTo(roadLayer);
                 });
+                
                 console.log('✅ Carreteras renderizadas en el mapa');
+                updateStatusIndicator('success', `✓ Actualizado #${updateCounter}`);
+                consecutiveFailures = 0;
             })
-            .catch(error => console.error('❌ Error al obtener datos de calles:', error));
+            .catch(error => {
+                console.error('❌ Error al obtener datos de calles:', error);
+                consecutiveFailures++;
+                updateStatusIndicator('error', `✗ Error (${consecutiveFailures})`);
+            });
     }
 
-    // --- FUNCIONES DE INTERACTIVIDAD DEL PANEL ---
     function showSegmentInfo(segmentData) {
         document.getElementById('segment-name').textContent = segmentData.segment_name;
         document.getElementById('segment-ucp').textContent = segmentData.ucp_density;
         document.getElementById('segment-occupancy').textContent = segmentData.occupancy_percentage + ' %';
 
-        // Asignar imagen de cámara
         const cameraInfo = segmentCameraMap[segmentData.segment_name];
         if (cameraInfo) {
             document.getElementById('camera-image').src = cameraInfo.image;
             document.getElementById('camera-label').textContent = cameraInfo.name;
         } else {
-            // Imagen por defecto si no se encuentra el segmento
             document.getElementById('camera-image').src = '/static/imagenes/1.png';
             document.getElementById('camera-label').textContent = 'Cámara de tráfico';
         }
 
         const vehicleListContent = document.getElementById('vehicle-list-content');
-        vehicleListContent.innerHTML = ''; 
+        vehicleListContent.innerHTML = '';
 
         const sortedVehicles = Object.entries(segmentData.vehicle_counts)
             .filter(([, count]) => count > 0)
@@ -268,25 +390,42 @@
     }
     map.on('click', hideInfoPanel);
 
-    // --- CARGA INICIAL Y BUCLE DE ACTUALIZACIÓN ---
+    // ============================================
+    // ✅ SOLUCIÓN: Carga inicial y actualización
+    // ============================================
     function initialLoad() {
         console.log('🚀 Iniciando monitor de tráfico...');
+        updateStatusIndicator('updating', 'Cargando inicial...');
         updateStatusInfo();
         updateTrafficDetails().then(() => {
             updateRoads();
         });
     }
 
+    // ✅ Actualizar cada 10 segundos con mejor logging
     setInterval(() => {
-        console.log('🔄 [' + new Date().toLocaleTimeString() + '] Actualizando datos del mapa...');
+        const now = new Date();
+        console.log(`\n${'='.repeat(60)}`);
+        console.log(`🔄 [${now.toLocaleTimeString()}] Ciclo de actualización #${updateAttempts + 1}`);
+        console.log(`${'='.repeat(60)}`);
+        
         updateStatusInfo();
         updateTrafficDetails().then(() => {
             updateRoads();
-            console.log('✅ [' + new Date().toLocaleTimeString() + '] Mapa actualizado');
         });
-    }, 10000); // Cada 10 segundos
+    }, 10000);
 
+    // ✅ Iniciar
     initialLoad();
+    
+    // ✅ Log de diagnóstico cada minuto
+    setInterval(() => {
+        console.log(`\n📊 DIAGNÓSTICO:`);
+        console.log(`   - Intentos de actualización: ${updateAttempts}`);
+        console.log(`   - Último update_counter: ${lastUpdateCounter}`);
+        console.log(`   - Fallos consecutivos: ${consecutiveFailures}`);
+        console.log(`   - Segmentos en memoria: ${trafficDataStore.length}`);
+    }, 60000);
 </script>
 
 </body>
