@@ -1,0 +1,6 @@
+# Ignore frontend Dockerfile for backend service
+Dockerfile.frontend
+railway.json
+railway.frontend.toml
+railway.frontend.json
+nixpacks.frontend.toml
