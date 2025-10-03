@@ -37,6 +37,12 @@ if not os.path.exists(CACHE_DIR):
 
 app = Flask(__name__, static_folder='../imagenes', static_url_path='/static/imagenes')
 
+# ✅ Desactivar caché de templates para siempre usar la versión más reciente
+app.config['TEMPLATES_AUTO_RELOAD'] = True
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+app.jinja_env.auto_reload = True
+app.jinja_env.cache = {}
+
 # ============================================
 # SOLUCIÓN 2: CORS más permisivo para Render
 # ============================================
