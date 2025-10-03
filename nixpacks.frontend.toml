@@ -1,4 +1,4 @@
-# Nixpacks configuration for Railway
+# Nixpacks configuration for Railway Frontend
 # Tell Railway to use Dockerfile.frontend
 
 [build]

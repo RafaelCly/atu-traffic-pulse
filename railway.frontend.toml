@@ -1,5 +1,5 @@
-# Railway configuration
-# This tells Railway to use Dockerfile for builds
+# Railway configuration for Frontend
+# This tells Railway to use Dockerfile.frontend
 
 [build]
 builder = "dockerfile"
