@@ -27,11 +27,14 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
-COPY . .
+# Copy only the Python backend files
+COPY src/Mapas/ ./src/Mapas/
+
+# Create necessary directories
+RUN mkdir -p src/Mapas/cache src/Mapas/templates
 
 # Expose port (Railway will override this with $PORT)
 EXPOSE 5000
 
-# Start command
-CMD gunicorn --chdir src/Mapas app:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120
+# Start command using gunicorn
+CMD ["sh", "-c", "gunicorn --chdir src/Mapas app:app --bind 0.0.0.0:${PORT:-5000} --workers 1 --timeout 120 --log-level info"]
