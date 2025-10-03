@@ -455,7 +455,33 @@ def update_traffic_periodically():
 
 @app.route('/')
 def map_page():
-    """Ruta raíz - devuelve información de la API"""
+    """Ruta raíz - sirve el mapa HTML"""
+    try:
+        response = app.make_response(render_template('map.html'))
+        return add_no_cache_headers(response)
+    except Exception as e:
+        # Si no se puede renderizar el template, devolver info de la API
+        logging.error(f"Error rendering map.html: {e}")
+        return jsonify({
+            'message': 'ATU Traffic Pulse API',
+            'status': 'running',
+            'error': 'Map template not available',
+            'version': '1.0',
+            'endpoints': {
+                'health': '/health',
+                'debug': '/api/debug',
+                'kpis': '/api/kpis',
+                'traffic_data': '/api/traffic_data',
+                'current_interval': '/api/current_interval',
+                'intervals': '/api/intervals',
+                'ucp_by_interval': '/api/ucp_by_interval'
+            },
+            'timestamp': datetime.now().isoformat()
+        }), 200
+
+@app.route('/api/info')
+def api_info():
+    """Información de la API"""
     return jsonify({
         'message': 'ATU Traffic Pulse API',
         'status': 'running',
