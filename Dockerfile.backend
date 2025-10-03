@@ -28,4 +28,4 @@ RUN mkdir -p src/Mapas/cache src/Mapas/templates
 # Expose port (Railway will override this with $PORT)
 EXPOSE 5000
 # Start command using gunicorn
-CMD ["sh", "-c", "gunicorn --chdir src/Mapas app:app --bind 0.0.0.0:${PORT:-5000} --workers 1 --timeout 120 --log-level info"]
+CMD gunicorn --chdir src/Mapas app:app --bind 0.0.0.0:${PORT:-5000} --workers 1 --timeout 120 --log-level info
