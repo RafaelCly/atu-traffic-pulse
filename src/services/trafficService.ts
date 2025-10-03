@@ -62,9 +62,10 @@ export interface VehicleByIntervalAndSegment {
 
 // Detectar si estamos en producción o desarrollo
 const isProd = import.meta.env.PROD;
-const PYTHON_MAP_BASE_URL = isProd 
+// Usar variable de entorno si está disponible, sino usar la URL por defecto
+const PYTHON_MAP_BASE_URL = import.meta.env.VITE_API_URL || (isProd 
   ? 'https://atu-traffic-pulse-backend.onrender.com'
-  : 'http://localhost:5000';
+  : 'http://localhost:5000');
 
 const REQUEST_TIMEOUT = 30000; // 30 segundos timeout (Render puede tardar en "despertar")
 const MAX_RETRIES = 3; // Número de reintentos antes de fallar
