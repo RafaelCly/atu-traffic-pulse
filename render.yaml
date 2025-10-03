@@ -20,14 +20,37 @@ services:
     name: atu-traffic-pulse-backend
     runtime: python
     plan: free
-    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
-    # Usar gunicorn para producción (más estable que python app.py)
-    startCommand: cd src/Mapas && gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 120 --log-level info app:app
+    # ✅ FIX 1: Instalar requirements desde la raíz correcta
+    buildCommand: |
+      pip install --upgrade pip
+      cd src/Mapas && pip install -r requirements.txt
+    
+    # ✅ FIX 2: Usar el worker correcto y desde el directorio correcto
+    # Gunicorn necesita estar en el mismo directorio que app.py
+    startCommand: cd src/Mapas && gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 2 --worker-class gthread --timeout 300 --keep-alive 75 --log-level info --access-logfile - --error-logfile - app:app
+    
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
       - key: FLASK_ENV
         value: production
-      - key: PORT
-        value: 5000
+      # ✅ FIX 3: No sobrescribir PORT, Render lo maneja automáticamente
+      # - key: PORT
+      #   value: 5000  <- ESTO CAUSA CONFLICTOS
+      
+      # ✅ FIX 4: Variables críticas para Python
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      
+      # ✅ FIX 5: Desactivar cache de Python bytecode
+      - key: PYTHONDONTWRITEBYTECODE
+        value: "1"
+    
     healthCheckPath: /health
+    
+    # ✅ FIX 6: CRÍTICO - Persistir el directorio de caché
+    # Sin esto, los archivos de caché se pierden en cada deploy
+    disk:
+      name: cache-storage
+      mountPath: /opt/render/project/src/Mapas/cache
+      sizeGB: 1
