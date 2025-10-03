@@ -1,0 +1,77 @@
+# Backend-specific dockerignore
+# Ignore frontend files when building backend
+
+# Node/Frontend
+node_modules/
+package.json
+package-lock.json
+tsconfig*.json
+vite.config.ts
+tailwind.config.ts
+postcss.config.js
+components.json
+eslint.config.js
+index.html
+
+# Frontend source
+src/components/
+src/pages/
+src/hooks/
+src/lib/
+src/App.tsx
+src/App.css
+src/index.css
+src/main.tsx
+src/vite-env.d.ts
+public/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# Build artifacts
+dist/
+dist-ssr/
+build/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Caches
+.cache/
+src/Mapas/cache/
+
+# Environment
+.env
+.env.*
+
+# Logs
+logs/
+*.log
+
+# Other configs
+netlify.toml
+vercel.json
+render.yaml

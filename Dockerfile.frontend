@@ -4,14 +4,19 @@ FROM node:18-alpine AS builder
 # Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy package files first (for better caching)
+COPY package.json package-lock.json ./
 
 # Install dependencies
 RUN npm ci
 
-# Copy source code
-COPY . .
+# Copy all necessary source files for frontend
+COPY index.html ./
+COPY vite.config.ts tsconfig.json tsconfig.app.json tsconfig.node.json ./
+COPY tailwind.config.ts postcss.config.js components.json ./
+COPY eslint.config.js ./
+COPY public/ ./public/
+COPY src/ ./src/
 
 # Build argument for API URL
 ARG VITE_API_URL

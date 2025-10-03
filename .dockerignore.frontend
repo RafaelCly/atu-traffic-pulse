@@ -1,3 +1,9 @@
+# Frontend-specific dockerignore
+# Keep necessary files for frontend build
+
+# Python backend files (not needed for frontend)
+src/Mapas/
+
 # Python
 __pycache__/
 *.py[cod]
@@ -5,9 +11,7 @@ __pycache__/
 *.so
 .Python
 *.egg-info/
-dist/
-build/
-*.egg
+requirements.txt
 
 # Virtual environments
 venv/
@@ -38,7 +42,6 @@ Thumbs.db
 
 # Caches
 .cache/
-*.cache
 
 # Environment
 .env
@@ -47,3 +50,10 @@ Thumbs.db
 # Logs
 logs/
 *.log
+
+# Other configs
+netlify.toml
+vercel.json
+render.yaml
+Dockerfile.backend
+railway.backend.json
