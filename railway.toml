@@ -1,0 +1,20 @@
+# Railway configuration for multiple services
+
+# Frontend service
+[frontend]
+build.dockerfile = "Dockerfile.frontend"
+build.buildCommand = "npm ci && npm run build"
+
+[frontend.deploy]
+startCommand = "nginx -g 'daemon off;'"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+# Backend service  
+[backend]
+build.dockerfile = "Dockerfile.backend"
+
+[backend.deploy]
+startCommand = "gunicorn --chdir src/Mapas app:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
