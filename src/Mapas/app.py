@@ -455,8 +455,22 @@ def update_traffic_periodically():
 
 @app.route('/')
 def map_page():
-    response = app.make_response(render_template('map.html'))
-    return add_no_cache_headers(response)
+    """Ruta raíz - devuelve información de la API"""
+    return jsonify({
+        'message': 'ATU Traffic Pulse API',
+        'status': 'running',
+        'version': '1.0',
+        'endpoints': {
+            'health': '/health',
+            'debug': '/api/debug',
+            'kpis': '/api/kpis',
+            'traffic_data': '/api/traffic_data',
+            'current_interval': '/api/current_interval',
+            'intervals': '/api/intervals',
+            'ucp_by_interval': '/api/ucp_by_interval'
+        },
+        'timestamp': datetime.now().isoformat()
+    }), 200
 
 @app.route('/health')
 def health_check():
