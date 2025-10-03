@@ -92,7 +92,7 @@ const Dashboard = () => {
       console.log('Dashboard: Actualizando KPIs automáticamente...');
       loadKPIs();
     }, 15000);
-    
+   
     return () => {
       console.log('Dashboard: Limpiando intervalo de KPIs');
       clearInterval(kpiInterval);

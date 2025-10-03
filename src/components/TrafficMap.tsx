@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, ExternalLink, AlertTriangle } from "lucide-react";
+import { ExternalLink, AlertTriangle } from "lucide-react";
 
 // Detectar si estamos en producción o desarrollo
 const isProd = import.meta.env.PROD;
@@ -91,7 +90,6 @@ const TrafficMap = () => {
             className="mt-3 sm:mt-4 text-sm"
             variant="outline"
           >
-            <RefreshCw className="h-4 w-4 mr-2" />
             Reintentar
           </Button>
         </div>
@@ -112,22 +110,8 @@ const TrafficMap = () => {
 
   return (
     <div className="h-full w-full relative overflow-hidden rounded-lg">
-      {/* Controles del mapa */}
-      <div className="absolute top-2 sm:top-4 right-2 sm:right-4 z-10 flex flex-col sm:flex-row gap-1 sm:gap-2">
-        <Badge variant="outline" className="bg-card/90 backdrop-blur-sm border-success text-xs sm:text-sm">
-          <div className="w-2 h-2 bg-success rounded-full mr-1 sm:mr-2 animate-pulse" />
-          <span className="hidden sm:inline">Tiempo Real</span>
-          <span className="sm:hidden">Real</span>
-        </Badge>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={handleRefresh}
-          className="bg-card/90 backdrop-blur-sm h-7 sm:h-8 px-2 sm:px-3 text-xs sm:text-sm"
-        >
-          <RefreshCw className="h-3 w-3 sm:mr-1" />
-          <span className="hidden sm:inline">Actualizar</span>
-        </Button>
+      {/* Controles del mapa - Solo botón abrir */}
+      <div className="absolute top-2 sm:top-4 right-2 sm:right-4 z-10 flex gap-1 sm:gap-2">
         <Button
           size="sm"
           variant="outline"
@@ -137,14 +121,6 @@ const TrafficMap = () => {
           <ExternalLink className="h-3 w-3 sm:mr-1" />
           <span className="hidden sm:inline">Abrir</span>
         </Button>
-      </div>
-
-      {/* Información de última actualización */}
-      <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 z-10">
-        <Badge variant="outline" className="bg-card/90 backdrop-blur-sm text-[10px] sm:text-xs">
-          <span className="hidden sm:inline">Última actualización: </span>
-          {lastUpdate.toLocaleTimeString()}
-        </Badge>
       </div>
 
       {/* Iframe del mapa Python */}
