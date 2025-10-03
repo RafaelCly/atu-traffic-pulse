@@ -1,0 +1,30 @@
+# Ignore Node.js/Frontend files for Railway deployment
+package.json
+package-lock.json
+node_modules/
+.node-version
+
+# Ignore frontend source
+src/components/
+src/pages/
+src/hooks/
+src/lib/
+src/App.tsx
+src/App.css
+src/index.css
+src/main.tsx
+src/vite-env.d.ts
+
+# Ignore frontend config
+vite.config.ts
+tsconfig*.json
+tailwind.config.ts
+postcss.config.js
+components.json
+eslint.config.js
+index.html
+
+# Ignore other deployment configs
+netlify.toml
+vercel.json
+render.yaml
